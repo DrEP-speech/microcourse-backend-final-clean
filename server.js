@@ -29,6 +29,11 @@ app.get("/", (req, res) => {
 
 // DB connection & server start
 mongoose
+// Health check route
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB connected");
