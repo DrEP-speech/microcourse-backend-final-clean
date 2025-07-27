@@ -6,35 +6,31 @@ import morgan from "morgan";
 import mergedRoutes from "./routes/mergedRoutes.js";
 
 dotenv.config();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-// Health route
-app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "ok", message: "API is healthy" });
-});
-
-// Routes
-app.use("/api", mergedRoutes);
-
-// Root route
-app.get("/", (req, res) => {
-  res.send("MicroCourse Forge API is running...");
-});
-
-// DB connection & server start
-mongoose
 // Health check route
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
-  .connect(process.env.MONGO_URI)
+// Main API routes
+app.use("/api", mergedRoutes);
+
+// Database connection
+const mongoUri = process.env.MONGO_URI;
+if (!mongoUri) {
+  console.error("MONGO_URI not set");
+  process.exit(1);
+}
+
+mongoose
+  .connect(mongoUri)
   .then(() => {
     console.log("MongoDB connected");
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
