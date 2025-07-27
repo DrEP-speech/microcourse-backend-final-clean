@@ -10,27 +10,25 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ✅ Middleware (must come before routes)
+app.use(cors());
+app.use(express.json());
 app.use(morgan("dev"));
 
-// Health check route
+// ✅ Health check route
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
-// Main API routes
+// ✅ Main API routes
 app.use("/api", mergedRoutes);
 
-// Database connection
+// ✅ Database connection
 const mongoUri = process.env.MONGO_URI;
 if (!mongoUri) {
   console.error("MONGO_URI not set");
   process.exit(1);
 }
-
-// ... middleware
-app.use("/api", mergedRoutes);
-app.use(cors());
-app.use(express.json());
 
 mongoose
   .connect(mongoUri)
