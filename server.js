@@ -10,8 +10,6 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
-app.use(express.json());
 app.use(morgan("dev"));
 
 // Health check route
@@ -28,6 +26,11 @@ if (!mongoUri) {
   console.error("MONGO_URI not set");
   process.exit(1);
 }
+
+// ... middleware
+app.use("/api", mergedRoutes);
+app.use(cors());
+app.use(express.json());
 
 mongoose
   .connect(mongoUri)
