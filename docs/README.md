@@ -1,96 +1,60 @@
-# MicroCourse Backend API – Auto-Run Postman Collection
+---
 
-**Version:** v1.0.0  
-**Release Date:** July 29, 2025  
+## 🔐 GitHub Pull Request Workflow (with Approvals)
 
-This is the finalized backend API Postman collection for **MicroCourse**, designed for beginners to easily test the full user flow:  
-**Register → Login → Get Profile**  
+When working on a protected `main` branch, all changes must go through a Pull Request (PR).  
+This workflow also works for **solo developers** (self-approval).
 
 ---
 
-## 1. Import the Environment and Collection
+### 1️⃣ Create a Pull Request
 
-1. Open **Postman**.
-2. Click **Import** → **Upload Files**.
-3. Select:
-   - `MicroCourse_Backend_AutoRun.postman_collection.json`
-   - `MicroCourse_Backend.postman_environment.json`
+1. Push your branch to GitHub.
+2. Go to your repository and click **Compare & pull request** (if GitHub shows a banner)  
+   _OR_ click **Pull Requests** → **New pull request**.
+3. Choose:
+   - **base:** `main`
+   - **compare:** your feature branch
+4. Add a title and description → click the green **Create pull request** button.
 
-![Import Screenshot](./screenshots/import.png)
-
----
-
-## 2. Select the Environment
-
-1. In the top-right corner of Postman, click the environment dropdown.
-2. Select: **MicroCourse API Environment**
-
-![Select Environment Screenshot](./screenshots/select-environment.png)
+![Create PR](./screenshots/create-pr.png)
 
 ---
 
-## 3. Run the Auto-Run Collection
+### 2️⃣ Assign Yourself as Reviewer (Solo Developer)
 
-1. Go to the **Collections** tab.
-2. Hover over **MicroCourse Backend API (Auto-Run)** and click **Run Collection**.
+Once the PR is created:
+1. You’ll be redirected to the PR page.
+2. On the right-hand side, under **Reviewers**, click **Assign yourself**.
 
-![Run Collection Screenshot](./screenshots/run-collection.png)
-
----
-
-## 4. What Happens in Auto-Run?
-
-- **Register User:** If the user already exists (409), it will skip and move to login.
-- **Login User:** Authenticates the user and saves the `token`.
-- **Get Profile:** Uses the saved `token` to call the protected profile endpoint.
-
-![Result Screenshot](./screenshots/result.png)
+![Assign Yourself](./screenshots/assign-yourself.png)
 
 ---
 
-## 5. Troubleshooting
+### 3️⃣ Review and Approve the PR
 
-### **1. 409: User Already Exists**
-- This is normal. The test script will skip the Register step and move to Login.
+1. Go to the **Files changed** tab.
+2. Click the **Review changes** button (top right).
+3. Select **Approve** and click **Submit review**.
 
-### **2. 401: Invalid or Expired Token**
-- Run the collection again to refresh the token.
-
-### **3. Token Variable is Empty**
-- Make sure you selected the correct environment (`MicroCourse API Environment`) before running the collection.
-- Check the **Tests tab** in the **Login User** request – it sets the token dynamically.
-
-### **4. Requests Not Chaining**
-- Always use **Run Collection**. If you only click "Send" on a single request, chaining will not work.
-
-![Error Screenshot](./screenshots/error.png)
+![Approve PR](./screenshots/approve-pr.png)
 
 ---
 
-## 6. How to Reset If You Mess Up the Environment or Variables (Beginner-Friendly)
+### 4️⃣ Merge the PR
 
-1. **Delete the Environment:**
-   - In Postman, click the gear icon ⚙️ (top right).
-   - Find **MicroCourse API Environment**, click the trash 🗑️ icon, and confirm.
+1. Go back to the **Conversation** tab.
+2. Click the green **Merge pull request** button.
+3. This will trigger the Render deployment (since we locked deploys to `main`).
 
-2. **Delete the Collection:**
-   - Right-click **MicroCourse Backend API (Auto-Run)** in the left sidebar.
-   - Click **Delete**.
-
-3. **Re-import Fresh Copies:**
-   - Follow **Step 1: Import the Environment and Collection** above.
-   - This ensures all variables (`token`, `base_url`) are fresh and correct.
-
-⚡ **Tip:** If you are unsure, deleting and re-importing is the quickest way to start clean.
+![Merge PR](./screenshots/merge-pr.png)
 
 ---
 
-## Changelog
-
-### **v1.0.0 – Initial Stable Release**
-- Added complete Register → Login → Profile auto-run collection.
-- Dynamic token saving and usage.
-- Beginner-friendly documentation with fresh screenshots.
-- Added reset instructions for beginners.
-
----
+### 🔄 Resetting if Something Goes Wrong
+If you get stuck:
+1. Delete your local branch and re-pull `main`:
+   ```bash
+   git checkout main
+   git pull origin main
+   git branch -D <your-feature-branch>
