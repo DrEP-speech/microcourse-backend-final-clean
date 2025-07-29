@@ -1,0 +1,99 @@
+{
+  "info": {
+    "name": "MicroCourse Backend API (Auto-Run)",
+    "_postman_id": "d0c78a1b-5e62-4b1f-9b22-abc123456789",
+    "description": "Auto-run collection for Register → Login → Profile flow with token management.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register User",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": "{{base_url}}/api/register"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// If user already exists, skip to Login",
+              "if (pm.response.code === 409) {",
+              "    console.log('User exists, skipping register');",
+              "    postman.setNextRequest('Login User');",
+              "} else {",
+              "    postman.setNextRequest('Login User');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login User",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": "{{base_url}}/api/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Save token and jump to Profile",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('token', jsonData.token);",
+              "    postman.setNextRequest('Get Profile (Protected)');",
+              "} else {",
+              "    postman.setNextRequest(null);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Profile (Protected)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/profile"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Stop sequence after profile",
+              "postman.setNextRequest(null);"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": []
+}
