@@ -1,87 +1,71 @@
-import express from "express";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import User from "../models/User.js";
+
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 const router = express.Router();
 
-// Register new user
-router.post("/register", async (req, res) => {
+// Register User
+router.post('/register', async (req, res) => {
+  const { name, email, password } = req.body;
+
   try {
-    const { name, email, password } = req.body;
-
-    // Check existing user
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+    if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Save user
     const user = new User({ name, email, password: hashedPassword });
     await user.save();
 
-    // Generate token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    res.status(201).json({ token, user });
-  } catch (error) {
-    res.status(500).json({ message: "Error registering user", error });
+    res.status(201).json({ message: 'User registered successfully!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error during registration' });
   }
 });
 
-// Login user
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// Login User
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
 
-    // Check user
+  try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "User not found" });
+    if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
-    // Check password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
 
-    // Sign token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
-    res.json({ token, user });
-  } catch (error) {
-    res.status(500).json({ message: "Error logging in", error });
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error during login' });
   }
 });
 
-// Protected route (profile)
-router.get("/profile", verifyToken, async (req, res) => {
+// Protected route
+router.get('/profile', verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user.id).select('-password');
     res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching profile", error });
+  } catch (err) {
+    res.status(500).json({ error: 'Unable to fetch user profile' });
   }
 });
 
-// Middleware for token verification
+// Middleware for JWT verification
 function verifyToken(req, res, next) {
-  const bearerHeader = req.headers["authorization"];
-  if (!bearerHeader)
-    return res.status(403).json({ message: "No token provided" });
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
 
-  const token = bearerHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
-  } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+  } catch (err) {
+    res.status(403).json({ error: 'Invalid token' });
   }
 }
 
