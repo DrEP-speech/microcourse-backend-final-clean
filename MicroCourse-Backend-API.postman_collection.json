@@ -1,30 +1,37 @@
 {
   "info": {
     "name": "MicroCourse Backend API",
-    "_postman_id": "microcourse-collection",
-    "description": "Collection for testing all MicroCourse Backend API endpoints",
+    "_postman_id": "f1d2d2f9-5f1c-4b5b-8a61-a9f8d4d02d00",
+    "description": "Test all API endpoints for MicroCourse Backend",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Root Route",
+      "name": "Root (Welcome)",
       "request": {
         "method": "GET",
-        "url": "{{base_url}}/"
+        "url": "https://microcourse-backend-final-clean.onrender.com/"
       }
     },
     {
       "name": "Health Check",
       "request": {
         "method": "GET",
-        "url": "{{base_url}}/api/health"
+        "url": "https://microcourse-backend-final-clean.onrender.com/api/health"
       }
     },
     {
-      "name": "Debug Route",
+      "name": "Debug",
       "request": {
         "method": "GET",
-        "url": "{{base_url}}/debug"
+        "url": "https://microcourse-backend-final-clean.onrender.com/api/debug"
+      }
+    },
+    {
+      "name": "DB Check",
+      "request": {
+        "method": "GET",
+        "url": "https://microcourse-backend-final-clean.onrender.com/api/db-check"
       }
     },
     {
@@ -32,16 +39,13 @@
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+          "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
         },
-        "url": "{{base_url}}/api/auth/register"
+        "url": "https://microcourse-backend-final-clean.onrender.com/api/auth/register"
       }
     },
     {
@@ -49,23 +53,24 @@
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
         },
-        "url": "{{base_url}}/api/auth/login"
+        "url": "https://microcourse-backend-final-clean.onrender.com/api/auth/login"
       }
-    }
-  ],
-  "variable": [
+    },
     {
-      "key": "base_url",
-      "value": "http://localhost:5000"
+      "name": "Get Profile (Protected)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "https://microcourse-backend-final-clean.onrender.com/api/auth/profile"
+      }
     }
   ]
 }
