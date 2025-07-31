@@ -1,39 +1,60 @@
-import express from "express";
-import dotenv from "dotenv";
-import mongoose from "mongoose";
-import cors from "cors";
-import morgan from "morgan";
-import mergedRoutes from "./routes/mergedRoutes.js";
+import express from 'express';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import cors from 'cors';
+
+import authRoutes from './routes/auth.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// ===== Middleware =====
+// Middleware
 app.use(cors());
-app.use(express.json()); // must be BEFORE routes
-app.use(morgan("dev"));
+app.use(express.json());
 
-// ===== Health Check =====
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected'))
+.catch((err) => console.error('MongoDB connection error:', err));
+
+// Root route
+app.get('/', (req, res) => {
+    res.send('Welcome to MicroCourse Backend API');
 });
 
-// ===== Main API Routes =====
-app.use("/api", mergedRoutes);
+// Health route
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'OK', message: 'Backend is working!' });
+});
 
-// ===== MongoDB Connection =====
-const mongoUri = process.env.MONGO_URI;
-if (!mongoUri) {
-  console.error("MONGO_URI not set");
-  process.exit(1);
+// Debug route
+app.get('/debug', (req, res) => {
+    res.status(200).json({ debug: true, env: process.env.NODE_ENV || 'development' });
+});
+
+// Auth routes
+app.use('/api/auth', authRoutes);
+
+const DEFAULT_PORT = process.env.PORT || 5000;
+
+function startServer(port) {
+  const server = app.listen(port, () => {
+    console.log(`✅ Server running on port ${port}`);
+  });
+
+  // Listen for port errors and retry
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`⚠️ Port ${port} in use, trying ${port + 1}...`);
+      startServer(port + 1);
+    } else {
+      console.error('❌ Server error:', err);
+    }
+  });
 }
 
-mongoose
-  .connect(mongoUri)
-  .then(() => {
-    console.log("MongoDB connected");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch((err) => console.error("MongoDB connection error:", err));
+startServer(Number(DEFAULT_PORT));
