@@ -1,4 +1,3 @@
-
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -6,67 +5,67 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
-// Register User
-router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+// Middleware: Verify JWT
+const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'No token provided' });
 
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ error: 'Invalid token' });
+    req.user = decoded;
+    next();
+  });
+};
+
+// POST: Register user
+router.post('/register', async (req, res) => {
   try {
+    const { name, email, password } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = new User({ name, email, password: hashedPassword });
-    await user.save();
+    const newUser = new User({ name, email, password: hashedPassword });
+    await newUser.save();
 
-    res.status(201).json({ message: 'User registered successfully!' });
+    res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
-    res.status(500).json({ error: 'Server error during registration' });
+    res.status(500).json({ error: 'Error registering user', details: err.message });
   }
 });
 
-// Login User
+// POST: Login user
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
+      expiresIn: '1d'
+    });
 
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    res.json({ token, user: { name: user.name, email: user.email } });
   } catch (err) {
-    res.status(500).json({ error: 'Server error during login' });
+    res.status(500).json({ error: 'Error logging in', details: err.message });
   }
 });
 
-// Protected route
+// GET: Profile (protected)
 router.get('/profile', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: 'Unable to fetch user profile' });
+    res.status(500).json({ error: 'Error fetching profile', details: err.message });
   }
 });
-
-// Middleware for JWT verification
-function verifyToken(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token provided' });
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    res.status(403).json({ error: 'Invalid token' });
-  }
-}
 
 export default router;
