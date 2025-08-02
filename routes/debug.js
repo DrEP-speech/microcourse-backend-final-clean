@@ -1,8 +1,8 @@
 import express from 'express';
-const router = express.Router();
+import { debug } from '../controllers/debugController.js';
 
-router.get('/', (req, res) => {
-  res.json({ message: 'Debug route working', env: process.env.NODE_ENV || 'development' });
-});
+const router = express.Router();
+router.get('/', debug);
 
 export default router;
+
