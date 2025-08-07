@@ -1,54 +1,25 @@
 // controllers/userController.js
 import asyncHandler from 'express-async-handler';
+import User from '../models/User.js';
+import generateToken from '../utils/generateToken.js';
 
-// Dummy DB mock – replace with real MongoDB model later
-const users = [];
-
-// @desc    Register new user
-// @route   POST /api/users/register
-export const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
-
-  const userExists = users.find((u) => u.email === email);
-  if (userExists) {
-    res.status(400);
-    throw new Error('User already exists');
-  }
-
-  const newUser = { id: users.length + 1, name, email, password };
-  users.push(newUser);
-
-  res.status(201).json({
-    message: 'User registered',
-    user: newUser,
-  });
-});
-
-// @desc    Login user
+// @desc    Login user & get token
 // @route   POST /api/users/login
+// @access  Public
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  const user = users.find((u) => u.email === email && u.password === password);
-  if (!user) {
+  const user = await User.findOne({ email });
+
+  if (user && (await user.matchPassword(password))) {
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      token: generateToken(user._id),
+    });
+  } else {
     res.status(401);
-    throw new Error('Invalid credentials');
+    throw new Error('Invalid email or password');
   }
-
-  res.json({
-    message: 'Login successful',
-    user,
-  });
-});
-
-// @desc    Get user profile
-// @route   GET /api/users/profile
-export const getUserProfile = asyncHandler(async (req, res) => {
-  const mockUser = users[0] || null;
-  if (!mockUser) {
-    res.status(404);
-    throw new Error('User not found');
-  }
-
-  res.json({ user: mockUser });
 });
