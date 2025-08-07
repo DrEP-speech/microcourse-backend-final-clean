@@ -2,6 +2,6 @@ import express from 'express';
 
 const router = express.Router();
 
-// Future: Google SSO, Microsoft SSO, etc.
+// Future: Add PDF generation for quiz summaries, reports, certificates
 
 export default router;
