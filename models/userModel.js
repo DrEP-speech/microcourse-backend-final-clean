@@ -1,27 +1,43 @@
-// models/userModel.js
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Please add a name'],
+      required: [true, 'User name is required'],
     },
     email: {
       type: String,
-      required: [true, 'Please add an email'],
+      required: [true, 'Email is required'],
       unique: true,
-      lowercase: true,
     },
     password: {
       type: String,
-      required: [true, 'Please add a password'],
+      required: true,
     },
     role: {
       type: String,
       enum: ['student', 'instructor', 'admin'],
       default: 'student',
+    },
+    badges: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Badge',
+      },
+    ],
+    streak: {
+      type: Number,
+      default: 0,
+    },
+    lastLogin: Date,
+    profileComplete: {
+      type: Boolean,
+      default: false,
+    },
+    preferences: {
+      weeklyEmails: { type: Boolean, default: true },
+      theme: { type: String, default: 'light' },
     },
   },
   {
@@ -29,19 +45,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Encrypt password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-// Match user entered password to hashed password
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
-const User = mongoose.model('User', userSchema);
-
+// ✅ This prevents OverwriteModelError:
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 export default User;

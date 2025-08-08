@@ -1,9 +1,8 @@
-// middleware/authMiddleware.js
 import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 
-// Middleware to protect routes
+// ✅ Protect middleware
 const protect = asyncHandler(async (req, res, next) => {
   let token;
 
@@ -14,6 +13,7 @@ const protect = asyncHandler(async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
       req.user = await User.findById(decoded.id).select('-password');
       next();
     } catch (error) {
@@ -28,14 +28,14 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Middleware to restrict access to instructors only
-const instructorOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'instructor') {
+// ✅ Admin middleware
+const admin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
     next();
   } else {
     res.status(403);
-    throw new Error('Access denied: Instructors only');
+    throw new Error('Not authorized as an admin');
   }
 };
 
-export { protect, instructorOnly };
+export { protect, admin };
