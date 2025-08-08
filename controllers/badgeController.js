@@ -63,3 +63,11 @@ export const syncBadge = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
 };
+
+// ✅ Only one export block — no duplicates!
+export {
+  createBadge,
+  getAllBadges,
+  unlockBadge,
+  syncBadge
+};
