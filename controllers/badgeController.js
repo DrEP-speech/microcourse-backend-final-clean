@@ -99,3 +99,11 @@ export const revokeBadgeFromUser = async (req, res) => {
     res.status(500).json({ message: 'Failed to revoke badge' });
   }
 };
+export const syncBadge = async (req, res) => {
+  try {
+    // Dummy logic — replace with your real badge sync logic
+    res.status(200).json({ message: 'Badge sync completed successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Badge sync failed.' });
+  }
+};
