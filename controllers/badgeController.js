@@ -3,40 +3,32 @@
 import Badge from '../models/Badge.js';
 import User from '../models/User.js';
 
-// @desc    Create a new badge
-// @route   POST /api/badges
+// Create a new badge
 export const createBadge = async (req, res) => {
   try {
     const { name, description, icon, criteria } = req.body;
-
     const badge = new Badge({ name, description, icon, criteria });
     await badge.save();
-
     res.status(201).json({ success: true, badge });
-  } catch (error) {
-    console.error('createBadge error:', error);
-    res.status(500).json({ success: false, message: 'Server Error' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
 };
 
-// @desc    Get all badges
-// @route   GET /api/badges
+// Get all badges
 export const getAllBadges = async (req, res) => {
   try {
     const badges = await Badge.find().sort({ createdAt: -1 });
     res.status(200).json({ success: true, badges });
-  } catch (error) {
-    console.error('getAllBadges error:', error);
-    res.status(500).json({ success: false, message: 'Server Error' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
 };
 
-// @desc    Unlock badge for a user
-// @route   POST /api/badges/unlock
+// Unlock badge for user
 export const unlockBadge = async (req, res) => {
   try {
     const { userId, badgeId } = req.body;
-
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
@@ -45,20 +37,16 @@ export const unlockBadge = async (req, res) => {
       await user.save();
     }
 
-    res.status(200).json({ success: true, message: 'Badge unlocked', badges: user.badges });
-  } catch (error) {
-    console.error('unlockBadge error:', error);
-    res.status(500).json({ success: false, message: 'Server Error' });
+    res.status(200).json({ success: true, badges: user.badges });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
 };
 
-// @desc    Sync badge logic (placeholder for automation or worker sync)
-// @route   POST /api/badges/sync
+// Auto-sync badge based on score
 export const syncBadge = async (req, res) => {
   try {
     const { userId, score } = req.body;
-
-    // Example logic: award badge if score >= 90
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
@@ -70,17 +58,8 @@ export const syncBadge = async (req, res) => {
       await user.save();
     }
 
-    res.status(200).json({ success: true, message: 'Badge sync complete', badges: user.badges });
-  } catch (error) {
-    console.error('syncBadge error:', error);
-    res.status(500).json({ success: false, message: 'Server Error' });
+    res.status(200).json({ success: true, badges: user.badges });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
-};
-
-// ✅ Single Export Statement
-export {
-  createBadge,
-  getAllBadges,
-  unlockBadge,
-  syncBadge
 };
