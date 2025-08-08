@@ -1,96 +1,86 @@
 // controllers/badgeController.js
-import asyncHandler from 'express-async-handler';
+
 import Badge from '../models/Badge.js';
 import User from '../models/User.js';
 
-// @desc    Sync badges from analytics or logic engine
-// @route   POST /api/badges/sync
-// @access  Private/Admin
-export const syncBadge = asyncHandler(async (req, res) => {
-  const { userId, badgeType, details } = req.body;
-
-  if (!userId || !badgeType) {
-    res.status(400);
-    throw new Error('Missing required badge fields');
-  }
-
-  const badge = await Badge.create({
-    user: userId,
-    type: badgeType,
-    details,
-    awardedAt: new Date(),
-  });
-
-  await User.findByIdAndUpdate(userId, {
-    $addToSet: { badges: badge._id },
-  });
-
-  res.status(201).json({ message: 'Badge synced', badge });
-});
-
-// @desc    Get all badges for admin view
-// @route   GET /api/badges
-// @access  Private/Admin
-export const getAllBadges = asyncHandler(async (req, res) => {
-  const badges = await Badge.find().populate('user', 'name email');
-  res.json(badges);
-});
-
-// @desc    Create a new badge manually
+// @desc    Create a new badge
 // @route   POST /api/badges
-// @access  Private/Admin
-export const createBadge = asyncHandler(async (req, res) => {
-  const { user, type, details } = req.body;
+export const createBadge = async (req, res) => {
+  try {
+    const { name, description, icon, criteria } = req.body;
 
-  if (!user || !type) {
-    res.status(400);
-    throw new Error('User and type are required');
+    const badge = new Badge({ name, description, icon, criteria });
+    await badge.save();
+
+    res.status(201).json({ success: true, badge });
+  } catch (error) {
+    console.error('createBadge error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
+};
 
-  const newBadge = await Badge.create({
-    user,
-    type,
-    details,
-    awardedAt: new Date(),
-  });
-
-  await User.findByIdAndUpdate(user, {
-    $addToSet: { badges: newBadge._id },
-  });
-
-  res.status(201).json({ message: 'Badge created', badge: newBadge });
-});
-
-// @desc    Unlock badge for user manually (e.g., quiz milestone)
-// @route   PATCH /api/badges/unlock
-// @access  Private
-export const unlockBadge = asyncHandler(async (req, res) => {
-  const { badgeType, details } = req.body;
-  const userId = req.user._id;
-
-  if (!badgeType) {
-    res.status(400);
-    throw new Error('Badge type is required');
+// @desc    Get all badges
+// @route   GET /api/badges
+export const getAllBadges = async (req, res) => {
+  try {
+    const badges = await Badge.find().sort({ createdAt: -1 });
+    res.status(200).json({ success: true, badges });
+  } catch (error) {
+    console.error('getAllBadges error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
   }
+};
 
-  const badge = await Badge.create({
-    user: userId,
-    type: badgeType,
-    details,
-    awardedAt: new Date(),
-  });
+// @desc    Unlock badge for a user
+// @route   POST /api/badges/unlock
+export const unlockBadge = async (req, res) => {
+  try {
+    const { userId, badgeId } = req.body;
 
-  await User.findByIdAndUpdate(userId, {
-    $addToSet: { badges: badge._id },
-  });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-  res.status(201).json({ message: 'Badge unlocked', badge });
-});
+    if (!user.badges.includes(badgeId)) {
+      user.badges.push(badgeId);
+      await user.save();
+    }
 
-// ✅ Ensure all are exported
+    res.status(200).json({ success: true, message: 'Badge unlocked', badges: user.badges });
+  } catch (error) {
+    console.error('unlockBadge error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// @desc    Sync badge logic (placeholder for automation or worker sync)
+// @route   POST /api/badges/sync
+export const syncBadge = async (req, res) => {
+  try {
+    const { userId, score } = req.body;
+
+    // Example logic: award badge if score >= 90
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const badge = await Badge.findOne({ criteria: 'score_90' });
+    if (!badge) return res.status(404).json({ success: false, message: 'Badge not found' });
+
+    if (score >= 90 && !user.badges.includes(badge._id)) {
+      user.badges.push(badge._id);
+      await user.save();
+    }
+
+    res.status(200).json({ success: true, message: 'Badge sync complete', badges: user.badges });
+  } catch (error) {
+    console.error('syncBadge error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// ✅ Single Export Statement
 export {
-  syncBadge,
-  getAllBadges,
   createBadge,
+  getAllBadges,
   unlockBadge,
+  syncBadge
 };
