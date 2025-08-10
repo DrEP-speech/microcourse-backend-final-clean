@@ -1,24 +1,13 @@
-// routes/userRoutes.js
 import express from 'express';
+import { listUsers, getUser, createUser, updateUser, deleteUser } from '../controllers/userController.js';
+// import { requireAuth, requireRole } from '../middleware/auth.js';
+
 const router = express.Router();
-import {
-  registerUser,
-  loginUser,
-  getUserProfile,
-} from '../controllers/userController.js';
-import { protect } from '../middleware/authMiddleware.js';
 
-// @route   POST /api/users
-// @desc    Register a new user
-router.post('/', registerUser);
-
-// @route   POST /api/users/login
-// @desc    Authenticate user & get token
-router.post('/login', loginUser);
-
-// @route   GET /api/users/profile
-// @desc    Get user profile (requires auth)
-router.get('/profile', protect, getUserProfile);
+router.get('/', /* requireAuth, requireRole('admin'), */ listUsers);
+router.post('/', /* requireAuth, requireRole('admin'), */ createUser);
+router.get('/:id', /* requireAuth, */ getUser);
+router.patch('/:id', /* requireAuth, */ updateUser);
+router.delete('/:id', /* requireAuth, requireRole('admin'), */ deleteUser);
 
 export default router;
-

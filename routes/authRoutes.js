@@ -1,13 +1,11 @@
-// routes/authRoutes.js
 import express from 'express';
+import { signup, login, me } from '../controllers/authController.js';
+// import { requireAuth } from '../middleware/auth.js';
+
 const router = express.Router();
 
-router.get('/google', (req, res) => {
-  res.send('GET Google OAuth (future)');
-});
-
-router.get('/google/callback', (req, res) => {
-  res.send('GET Google OAuth Callback (future)');
-});
+router.post('/signup', signup);
+router.post('/login', login);
+router.get('/me', /* requireAuth, */ me);
 
 export default router;

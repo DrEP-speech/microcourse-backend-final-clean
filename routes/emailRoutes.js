@@ -1,13 +1,10 @@
-// routes/emailRoutes.js
 import express from 'express';
+import { sendEmail, previewEmail } from '../controllers/emailController.js';
+// import { requireAuth, requireRole } from '../middleware/auth.js';
+
 const router = express.Router();
 
-router.post('/send', (req, res) => {
-  res.send('POST send email');
-});
-
-router.get('/logs', (req, res) => {
-  res.send('GET email logs');
-});
+router.post('/send', /* requireAuth, requireRole('admin'), */ sendEmail);
+router.post('/preview', /* requireAuth, */ previewEmail);
 
 export default router;

@@ -1,16 +1,13 @@
-// routes/badgeRoutes.js
 import express from 'express';
-import {
-  unlockBadge,
-  getPublicBadges,
-  syncBadge
-} from '../controllers/badgeController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { listBadges, createBadge, awardBadge, syncBadge } from '../controllers/badgeController.js';
+// import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.post('/unlock', protect, unlockBadge);
-router.get('/public', getPublicBadges);
-router.post('/sync', protect, syncBadge);
+// NOTE: previously you imported getPublicBadges — replace with listBadges to match controller exports.
+router.get('/', listBadges);
+router.post('/', /* requireAuth, */ createBadge);
+router.post('/award', /* requireAuth, */ awardBadge);
+router.post('/sync', /* requireAuth, */ syncBadge);
 
 export default router;
