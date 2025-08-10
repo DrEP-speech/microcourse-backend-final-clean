@@ -4,7 +4,7 @@ import Badge from '../models/Badge.js';
 import User from '../models/User.js';
 
 // Create a new badge
-export const createBadge = async (req, res) => {
+const createBadge = async (req, res) => {
   try {
     const { name, description, icon, criteria } = req.body;
     const badge = new Badge({ name, description, icon, criteria });
@@ -16,7 +16,7 @@ export const createBadge = async (req, res) => {
 };
 
 // Get all badges
-export const getAllBadges = async (req, res) => {
+const getAllBadges = async (req, res) => {
   try {
     const badges = await Badge.find().sort({ createdAt: -1 });
     res.status(200).json({ success: true, badges });
@@ -26,7 +26,7 @@ export const getAllBadges = async (req, res) => {
 };
 
 // Unlock badge for user
-export const unlockBadge = async (req, res) => {
+const unlockBadge = async (req, res) => {
   try {
     const { userId, badgeId } = req.body;
     const user = await User.findById(userId);
@@ -44,7 +44,7 @@ export const unlockBadge = async (req, res) => {
 };
 
 // Auto-sync badge based on score
-export const syncBadge = async (req, res) => {
+const syncBadge = async (req, res) => {
   try {
     const { userId, score } = req.body;
     const user = await User.findById(userId);
