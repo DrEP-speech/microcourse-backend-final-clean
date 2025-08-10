@@ -1,80 +1,54 @@
-import asyncHandler from 'express-async-handler';
+// controllers/userController.js
 import User from '../models/User.js';
-import generateToken from '../utils/generateToken.js';
+import { asyncRoute, parsePagination, ok, created, fail } from './_utils.js';
 
-// @desc    Register a new user
-// @route   POST /api/users
-// @access  Public
-const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+const listUsers = async (req, res) => {
+  try {
+    const { skip, limit, sort, page } = parsePagination(req);
+    const [items, total] = await Promise.all([
+      User.find().select('-password').sort(sort).skip(skip).limit(limit).lean(),
+      User.countDocuments(),
+    ]);
+    return ok(res, items, { page, limit, total, pages: Math.ceil(total / limit) });
+  } catch (err) { return fail(res, err); }
+};
 
-  const userExists = await User.findOne({ email });
+const getUser = async (req, res) => {
+  try {
+    const u = await User.findById(req.params.id).select('-password').lean();
+    if (!u) return res.status(404).json({ success: false, message: 'User not found' });
+    return ok(res, u);
+  } catch (err) { return fail(res, err); }
+};
 
-  if (userExists) {
-    res.status(400);
-    throw new Error('User already exists');
-  }
+const createUser = async (req, res) => {
+  try {
+    const user = await User.create(req.body);
+    return created(res, { id: user._id });
+  } catch (err) { return fail(res, err); }
+};
 
-  const user = await User.create({
-    name,
-    email,
-    password,
-  });
+const updateUser = async (req, res) => {
+  try {
+    const updated = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).select('-password').lean();
+    if (!updated) return res.status(404).json({ success: false, message: 'User not found' });
+    return ok(res, updated);
+  } catch (err) { return fail(res, err); }
+};
 
-  if (user) {
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      token: generateToken(user._id),
-    });
-  } else {
-    res.status(400);
-    throw new Error('Invalid user data');
-  }
-});
+const deleteUser = async (req, res) => {
+  try {
+    const del = await User.findByIdAndDelete(req.params.id).lean();
+    if (!del) return res.status(404).json({ success: false, message: 'User not found' });
+    return ok(res, { id: del._id });
+  } catch (err) { return fail(res, err); }
+};
 
-// @desc    Login user & get token
-// @route   POST /api/users/login
-// @access  Public
-const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-
-  const user = await User.findOne({ email });
-
-  if (user && (await user.matchPassword(password))) {
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      token: generateToken(user._id),
-    });
-  } else {
-    res.status(401);
-    throw new Error('Invalid email or password');
-  }
-});
-
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
-const getUserProfile = asyncHandler(async (req, res) => {
-  const user = req.user; // Attached via auth middleware
-
-  if (user) {
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-    });
-  } else {
-    res.status(404);
-    throw new Error('User not found');
-  }
-});
-
-export {
-  registerUser,
-  loginUser,
-  getUserProfile,
+export { listUsers, getUser, createUser, updateUser, deleteUser };
+export default {
+  listUsers: asyncRoute(listUsers),
+  getUser: asyncRoute(getUser),
+  createUser: asyncRoute(createUser),
+  updateUser: asyncRoute(updateUser),
+  deleteUser: asyncRoute(deleteUser),
 };

@@ -1,30 +1,43 @@
 // controllers/authController.js
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import User from '../models/User.js';
+import { asyncRoute, requireFields, ok, created, fail } from './_utils.js';
 
-export const loginUser = async (req, res) => {
+const signup = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    // Validate credentials, generate token
-    res.json({ token: 'JWT_TOKEN_HERE', user: { email } });
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid credentials' });
-  }
+    const { email, password, name, role = 'student' } = req.body || {};
+    requireFields({ email, password, name }, ['email', 'password', 'name']);
+    const exists = await User.findOne({ email }).lean();
+    if (exists) return res.status(409).json({ success: false, message: 'Email already registered' });
+
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({ email, password: hash, name, role });
+    return created(res, { id: user._id, email: user.email, role: user.role });
+  } catch (err) { return fail(res, err); }
 };
 
-export const registerUser = async (req, res) => {
+const login = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    // Save user to DB
-    res.status(201).json({ message: 'User registered' });
-  } catch (error) {
-    res.status(500).json({ error: 'Registration failed' });
-  }
+    const { email, password } = req.body || {};
+    requireFields({ email, password }, ['email', 'password']);
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    const okPw = await bcrypt.compare(password, user.password);
+    if (!okPw) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    return ok(res, { token, user: { id: user._id, email: user.email, role: user.role, name: user.name } });
+  } catch (err) { return fail(res, err); }
 };
 
-export const googleOAuth = async (req, res) => {
+const me = async (req, res) => {
   try {
-    // Placeholder for future SSO/OAuth logic
-    res.status(200).json({ message: 'Google OAuth not yet implemented' });
-  } catch (error) {
-    res.status(500).json({ error: 'OAuth error' });
-  }
+    const user = await User.findById(req.user?.id).select('-password').lean();
+    if (!user) return res.status(404).json({ success: false, message: 'Not found' });
+    return ok(res, user);
+  } catch (err) { return fail(res, err); }
 };
+
+export { signup, login, me };
+export default { signup: asyncRoute(signup), login: asyncRoute(login), me: asyncRoute(me) };
