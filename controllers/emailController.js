@@ -1,20 +1,23 @@
 // controllers/emailController.js
-
-export const sendEmail = async (req, res) => {
+import { asyncRoute, ok, created, fail, requireFields } from './_utils.js';
+// TODO: plug in your real mailer (Nodemailer/Resend/etc.)
+const sendEmail = async (req, res) => {
   try {
-    const { to, subject, body } = req.body;
-    // Implement email service integration here
-    res.json({ success: true, message: 'Email sent' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to send email' });
-  }
+    const { to, subject, html } = req.body || {};
+    requireFields({ to, subject, html }, ['to', 'subject', 'html']);
+    // await mailer.send({ to, subject, html });
+    return created(res, { status: 'queued' });
+  } catch (err) { return fail(res, err); }
 };
 
-export const getEmailLogs = async (req, res) => {
+const previewEmail = async (req, res) => {
   try {
-    const logs = []; // Replace with DB logic
-    res.json(logs);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch email logs' });
-  }
+    return ok(res, { html: req.body?.html ?? '' });
+  } catch (err) { return fail(res, err); }
+};
+
+export { sendEmail, previewEmail };
+export default {
+  sendEmail: asyncRoute(sendEmail),
+  previewEmail: asyncRoute(previewEmail),
 };

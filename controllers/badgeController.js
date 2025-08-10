@@ -1,73 +1,61 @@
 // controllers/badgeController.js
-
 import Badge from '../models/Badge.js';
 import User from '../models/User.js';
+import { asyncRoute, parsePagination, ok, created, fail, requireFields } from './_utils.js';
 
-// Create a new badge
+const listBadges = async (req, res) => {
+  try {
+    const { skip, limit, sort, page } = parsePagination(req);
+    const [items, total] = await Promise.all([
+      Badge.find().sort(sort).skip(skip).limit(limit).lean(),
+      Badge.countDocuments(),
+    ]);
+    return ok(res, items, { page, limit, total, pages: Math.ceil(total / limit) });
+  } catch (err) { return fail(res, err); }
+};
+
 const createBadge = async (req, res) => {
   try {
-    const { name, description, icon, criteria } = req.body;
-    const badge = new Badge({ name, description, icon, criteria });
-    await badge.save();
-    res.status(201).json({ success: true, badge });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
-  }
+    const { key, name } = req.body || {};
+    requireFields({ key, name }, ['key', 'name']);
+    const dup = await Badge.findOne({ key }).lean();
+    if (dup) return res.status(409).json({ success: false, message: 'Badge key exists' });
+    const b = await Badge.create(req.body);
+    return created(res, { id: b._id });
+  } catch (err) { return fail(res, err); }
 };
 
-// Get all badges
-const getAllBadges = async (req, res) => {
+const awardBadge = async (req, res) => {
   try {
-    const badges = await Badge.find().sort({ createdAt: -1 });
-    res.status(200).json({ success: true, badges });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
-  }
-};
-
-// Unlock badge for user
-const unlockBadge = async (req, res) => {
-  try {
-    const { userId, badgeId } = req.body;
+    const { userId, badgeId } = req.body || {};
+    requireFields({ userId, badgeId }, ['userId', 'badgeId']);
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-
-    if (!user.badges.includes(badgeId)) {
-      user.badges.push(badgeId);
+    if (!user.badges?.some((id) => id.toString() === badgeId)) {
+      user.badges = [...(user.badges || []), badgeId];
       await user.save();
     }
-
-    res.status(200).json({ success: true, badges: user.badges });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
-  }
+    return ok(res, { badges: user.badges });
+  } catch (err) { return fail(res, err); }
 };
 
-// Auto-sync badge based on score
 const syncBadge = async (req, res) => {
   try {
-    const { userId, score } = req.body;
+    const { userId, badgeIds = [] } = req.body || {};
+    requireFields({ userId }, ['userId']);
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-
-    const badge = await Badge.findOne({ criteria: 'score_90' });
-    if (!badge) return res.status(404).json({ success: false, message: 'Badge not found' });
-
-    if (score >= 90 && !user.badges.includes(badge._id)) {
-      user.badges.push(badge._id);
-      await user.save();
-    }
-
-    res.status(200).json({ success: true, badges: user.badges });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Server Error', error: err.message });
-  }
+    const set = new Set([...(user.badges || []).map(String), ...badgeIds.map(String)]);
+    user.badges = [...set];
+    await user.save();
+    return ok(res, { badges: user.badges });
+  } catch (err) { return fail(res, err); }
 };
 
-// ✅ Only one export block — no duplicates!
-export {
-  createBadge,
-  getAllBadges,
-  unlockBadge,
-  syncBadge
+export { listBadges, createBadge, awardBadge, syncBadge };
+export default {
+  listBadges: asyncRoute(listBadges),
+  createBadge: asyncRoute(createBadge),
+  awardBadge: asyncRoute(awardBadge),
+  syncBadge: asyncRoute(syncBadge),
 };

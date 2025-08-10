@@ -1,48 +1,56 @@
 // controllers/quizController.js
 import Quiz from '../models/Quiz.js';
-import QuizResult from '../models/QuizResult.js';
+import { asyncRoute, parsePagination, ok, created, fail, requireFields } from './_utils.js';
 
-export const getAllQuizzes = async (req, res) => {
+const listQuizzes = async (req, res) => {
   try {
-    const quizzes = await Quiz.find();
-    res.json(quizzes);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch quizzes' });
-  }
+    const { skip, limit, sort, page } = parsePagination(req);
+    const filter = req.query.courseId ? { course: req.query.courseId } : {};
+    const [items, total] = await Promise.all([
+      Quiz.find(filter).sort(sort).skip(skip).limit(limit).lean(),
+      Quiz.countDocuments(filter),
+    ]);
+    return ok(res, items, { page, limit, total, pages: Math.ceil(total / limit) });
+  } catch (err) { return fail(res, err); }
 };
 
-export const getQuizById = async (req, res) => {
+const getQuiz = async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.quizId);
-    if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
-    res.json(quiz);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch quiz' });
-  }
+    const q = await Quiz.findById(req.params.id).lean();
+    if (!q) return res.status(404).json({ success: false, message: 'Quiz not found' });
+    return ok(res, q);
+  } catch (err) { return fail(res, err); }
 };
 
-export const submitQuiz = async (req, res) => {
+const createQuiz = async (req, res) => {
   try {
-    const { studentId, quizId, answers } = req.body;
-    // You can enhance this with AI scoring or adaptive logic later
-    const correctAnswers = await Quiz.findById(quizId).select('questions');
-    const total = correctAnswers.questions.length;
-    let score = 0;
+    requireFields(req.body || {}, ['title']);
+    const q = await Quiz.create({ ...req.body, owner: req.user?.id });
+    return created(res, { id: q._id });
+  } catch (err) { return fail(res, err); }
+};
 
-    answers.forEach((a, i) => {
-      if (a === correctAnswers.questions[i].correctOption) score++;
-    });
+const updateQuiz = async (req, res) => {
+  try {
+    const q = await Quiz.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
+    if (!q) return res.status(404).json({ success: false, message: 'Quiz not found' });
+    return ok(res, q);
+  } catch (err) { return fail(res, err); }
+};
 
-    const newResult = new QuizResult({
-      student: studentId,
-      quiz: quizId,
-      answers,
-      score: ((score / total) * 100).toFixed(2),
-    });
+const deleteQuiz = async (req, res) => {
+  try {
+    const q = await Quiz.findByIdAndDelete(req.params.id).lean();
+    if (!q) return res.status(404).json({ success: false, message: 'Quiz not found' });
+    return ok(res, { id: q._id });
+  } catch (err) { return fail(res, err); }
+};
 
-    await newResult.save();
-    res.json({ message: 'Quiz submitted', result: newResult });
-  } catch (error) {
-    res.status(500).json({ error: 'Submission failed' });
-  }
+export { listQuizzes, getQuiz, createQuiz, updateQuiz, deleteQuiz };
+export default {
+  listQuizzes: asyncRoute(listQuizzes),
+  getQuiz: asyncRoute(getQuiz),
+  createQuiz: asyncRoute(createQuiz),
+  updateQuiz: asyncRoute(updateQuiz),
+  deleteQuiz: asyncRoute(deleteQuiz),
 };

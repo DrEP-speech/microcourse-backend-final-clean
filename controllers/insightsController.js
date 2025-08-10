@@ -1,39 +1,28 @@
 // controllers/insightsController.js
+import { asyncRoute, ok, fail } from './_utils.js';
+// TODO: wire real analytics + AI provider later
 
-export const generateAIFeedback = async (req, res) => {
+const teacherSummaryInsights = async (_req, res) => {
   try {
-    const { quizId, answers } = req.body;
-    // Process with AI model / logic
-    res.json({ feedback: 'Here’s what to improve next time...' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to generate AI feedback' });
-  }
-};
-
-export const getUserAnalytics = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    // Compute stats across quizzes
-    res.json({
-      totalQuizzes: 10,
-      avgScore: 85,
-      topTopics: ['Math', 'Reading'],
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Analytics fetch failed' });
-  }
-};
-
-export const getQuizInsights = async (req, res) => {
-  try {
-    const { quizId } = req.params;
-    // Return hardest questions, missed concepts
-    res.json({
-      quizId,
+    // Aggregate hardest questions, topics, improvements...
+    return ok(res, {
       hardestQuestions: [],
-      mostMissedTopics: [],
+      topImprovements: [],
+      atRiskStudents: [],
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Quiz insight fetch failed' });
-  }
+  } catch (err) { return fail(res, err); }
+};
+
+const aiFeedbackForResult = async (req, res) => {
+  try {
+    const { resultId } = req.params;
+    // const feedback = await aiClient.generate({ resultId });
+    return ok(res, { resultId, feedback: 'Personalized AI feedback goes here.' });
+  } catch (err) { return fail(res, err); }
+};
+
+export { teacherSummaryInsights, aiFeedbackForResult };
+export default {
+  teacherSummaryInsights: asyncRoute(teacherSummaryInsights),
+  aiFeedbackForResult: asyncRoute(aiFeedbackForResult),
 };
