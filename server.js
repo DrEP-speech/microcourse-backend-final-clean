@@ -15,6 +15,16 @@ app.use(morgan('dev'));
 await connectDB();
 
 app.get('/', (_req, res) => res.json({ ok: true, name: 'microcourse-backend' }));
+// server.js (after middleware)
+app.get('/healthz', (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    uptime: process.uptime(),
+    env: process.env.NODE_ENV || 'development',
+    ts: new Date().toISOString(),
+  });
+});
+
 app.use('/api', api); // <— all routes under /api/*
 
 const PORT = process.env.PORT || 5000;
