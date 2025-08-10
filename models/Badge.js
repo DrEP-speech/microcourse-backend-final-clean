@@ -1,27 +1,18 @@
-// models/Badge.js
 import mongoose from 'mongoose';
+const { Schema } = mongoose;
 
-const badgeSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    unique: true,
+const badgeSchema = new Schema(
+  {
+    key: { type: String, required: true, unique: true, trim: true },
+    name: { type: String, required: true, trim: true },
+    description: { type: String, default: '' },
+    iconUrl: { type: String, default: '' },
+    points: { type: Number, default: 0 },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
-  description: {
-    type: String,
-  },
-  icon: {
-    type: String, // URL or icon name
-  },
-  isPublic: {
-    type: Boolean,
-    default: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+  { timestamps: true }
+);
 
-const Badge = mongoose.model('Badge', badgeSchema);
-export default Badge;
+export default mongoose.models.Badge || mongoose.model('Badge', badgeSchema);
