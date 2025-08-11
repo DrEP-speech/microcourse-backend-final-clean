@@ -1,25 +1,22 @@
 // middleware/auth.js
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
-export const requireAuth = (req, res, next) => {
-  const h = req.headers.authorization || '';
-  if (!h.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, message: 'Missing Bearer token' });
-  }
-  const token = h.slice(7);
+const COOKIE_NAME = process.env.COOKIE_NAME || "mc_token";
+const JWT_SECRET = process.env.JWT_SECRET || "change-me";
+
+export async function requireAuth(req, res, next) {
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: payload.id, role: payload.role };
+    const token = req.cookies?.[COOKIE_NAME];
+    if (!token) return res.status(401).json({ success: false, message: "Not authenticated" });
+
+    const payload = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(payload.sub);
+    if (!user) return res.status(401).json({ success: false, message: "Not authenticated" });
+
+    req.user = user;
     next();
   } catch (err) {
-    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    return res.status(401).json({ success: false, message: "Not authenticated" });
   }
-};
-
-export const requireRole = (...roles) => (req, res, next) => {
-  if (!req.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-  if (!roles.includes(req.user.role)) {
-    return res.status(403).json({ success: false, message: 'Forbidden' });
-  }
-  next();
-};
+}
