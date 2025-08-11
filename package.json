@@ -22,7 +22,7 @@
     "morgan": "^1.10.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "kill-port": "^2.0.1"
+    "kill-port": "^2.0.1",
+    "nodemon": "^3.0.1"
   }
 }
