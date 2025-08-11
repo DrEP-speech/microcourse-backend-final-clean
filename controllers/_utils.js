@@ -6,6 +6,13 @@ export const isObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 export const asyncRoute = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
+export const httpError = (status, message, details) => {
+  const err = new Error(message || 'Error');
+  err.status = status;
+  if (details) err.details = details;
+  return err;
+};
+
 export const parsePagination = (req) => {
   const page = Math.max(parseInt(req.query.page ?? '1', 10), 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit ?? '20', 10), 1), 100);
