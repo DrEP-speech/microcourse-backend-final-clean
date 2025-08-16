@@ -14,6 +14,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { parse as parseYAML } from 'yaml';
 import { v4 as uuidv4 } from 'uuid';
+import { existsSync, readFileSync } from 'fs';
 
 // ---- If you have DB connect helper, keep this import ----
 import connectDB from './config/db.js';
@@ -180,8 +181,24 @@ app.get('/readyz', (_req, res) => {
 /* ============================ DOCS (Swagger) ============================ */
 
 const openapiSpec = loadOpenApiSpec();
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, { explorer: true }));
 
+// Serve the raw OpenAPI JSON for tooling
+app.get('/docs/openapi.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=300'); // cache for 5 minutes
+  res.send(JSON.stringify(openapiSpec, null, 2));
+});
+
+app.get('/docs/openapi.yaml', (_req, res) => {
+  const yamlPath = path.join(__dirname, 'docs', 'openapi.yaml');
+  if (!existsSync(yamlPath)) return res.status(404).send('openapi.yaml not found');
+  res.setHeader('Content-Type', 'text/yaml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.send(readFileSync(yamlPath, 'utf8'));
+});
+
+// (already present)
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, { explorer: true }));
 /* ============================ ROUTES ============================ */
 
 // NOTE: we mount BOTH unversioned (/api) and versioned (/api/v1) aliases.
