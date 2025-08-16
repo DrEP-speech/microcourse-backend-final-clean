@@ -3,159 +3,174 @@ info:
   title: MicroCourse API
   version: 1.0.0
   description: >
-    Auth endpoints with cookie- and bearer-based authentication.
-    The server sets an `mc_token` cookie on signup/login when SameSite=None is allowed.
+    API for MicroCourse. Supports cookie-based and Bearer JWT auth.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
 servers:
   - url: /api
+    description: Base API
   - url: /api/v1
-  - url: https://microcourse-backend-final-clean.onrender.com/api
+    description: Versioned API
+
 tags:
   - name: auth
-    description: Authentication
+    description: Authentication endpoints
 
 components:
   securitySchemes:
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: mc_token
-      description: Send the `mc_token` cookie (set by login/signup) with requests.
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: "Send the token as: Authorization: Bearer <token>"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: mc_token
+      description: "Auth cookie set by the server after login/signup."
+
   schemas:
-    User:
-      type: object
-      properties:
-        _id: { type: string }
-        email: { type: string, format: email }
-        name: { type: string }
-        role: { type: string, example: student }
-        createdAt: { type: string, format: date-time }
-        updatedAt: { type: string, format: date-time }
-    SignupPayload:
+    AuthSignupRequest:
       type: object
       required: [name, email, password]
       properties:
-        name: { type: string, example: Tester }
-        email: { type: string, format: email, example: tester123@example.com }
-        password: { type: string, format: password, example: secret123 }
-    LoginPayload:
+        name:
+          type: string
+          example: Jane Doe
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 6
+          example: secret123
+    AuthLoginRequest:
       type: object
       required: [email, password]
       properties:
-        email: { type: string, format: email, example: tester123@example.com }
-        password: { type: string, format: password, example: secret123 }
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: secret123
+    PublicUser:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 64fb2d1f9a32b3a9c5f0d111
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        name:
+          type: string
+          example: Jane Doe
+        role:
+          type: string
+          example: student
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     AuthResponse:
       type: object
       properties:
-        success: { type: boolean, example: true }
+        success:
+          type: boolean
+          example: true
         user:
-          $ref: '#/components/schemas/User'
+          $ref: '#/components/schemas/PublicUser'
         token:
           type: string
-          description: Legacy field; identical to accessToken when present
+          description: "Legacy field: mirrors accessToken"
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         accessToken:
           type: string
-          description: JWT to use in Authorization: Bearer <token>
-    ErrorResponse:
-      type: object
-      properties:
-        success: { type: boolean, example: false }
-        message: { type: string }
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+security:
+  - cookieAuth: []
+  - bearerAuth: []
 
 paths:
   /auth/signup:
     post:
-      tags: [auth]
+      operationId: authSignup
       summary: Sign up
+      tags: [auth]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/SignupPayload' }
-            example: { name: Tester, email: tester123@example.com, password: secret123 }
+            schema:
+              $ref: '#/components/schemas/AuthSignupRequest'
       responses:
         '201':
-          description: Created. Sets `mc_token` cookie and returns tokens.
-          headers:
-            Set-Cookie:
+          description: "Created. Sets mc_token cookie and returns user + tokens."
+          content:
+            application/json:
               schema:
-                type: string
-              description: mc_token=…; HttpOnly; Secure; SameSite=None
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AuthResponse' }
+                $ref: '#/components/schemas/AuthResponse'
         '400':
-          description: Bad request
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-
+          description: "Invalid payload or email already in use."
   /auth/login:
     post:
-      tags: [auth]
+      operationId: authLogin
       summary: Login
+      tags: [auth]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/LoginPayload' }
-            example: { email: tester123@example.com, password: secret123 }
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
       responses:
         '200':
-          description: OK. Sets `mc_token` cookie and returns tokens.
+          description: "OK. Sets mc_token cookie and returns user + tokens."
           headers:
             Set-Cookie:
               schema:
                 type: string
-              description: mc_token=…; HttpOnly; Secure; SameSite=None
+              description: "Includes mc_token with SameSite=None; Secure in prod."
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/AuthResponse' }
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
         '401':
-          description: Invalid credentials
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-
+          description: "Invalid credentials."
+      x-rateLimit:
+        windowMs: 600000
+        max: 10
   /auth/me:
     get:
-      tags: [auth]
+      operationId: authMe
       summary: Current user
-      description: >
-        Requires either `mc_token` cookie or `Authorization: Bearer <token>`.
+      tags: [auth]
       security:
         - cookieAuth: []
         - bearerAuth: []
       responses:
         '200':
-          description: OK
+          description: "Returns the authenticated user."
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success: { type: boolean, example: true }
+                  success:
+                    type: boolean
+                    example: true
                   user:
-                    $ref: '#/components/schemas/User'
+                    $ref: '#/components/schemas/PublicUser'
         '401':
-          description: Not authenticated
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-
-  /auth/logout:
-    post:
-      tags: [auth]
-      summary: Logout and clear cookie
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean, example: true }
+          description: "Not authenticated."
