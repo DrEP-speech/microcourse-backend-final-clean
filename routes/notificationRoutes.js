@@ -1,11 +1,14 @@
+// routes/notificationRoutes.js
 import express from 'express';
-import { listNotifications, createNotification, markRead } from '../controllers/notificationController.js';
-// import { requireAuth } from '../middleware/auth.js';
+import requireAuth from '../middleware/requireAuth.js';
+import { list, create, markRead, remove } from '../controllers/notificationController.js';
 
 const router = express.Router();
 
-router.get('/', /* requireAuth, */ listNotifications);
-router.post('/', /* requireAuth, */ createNotification);
-router.patch('/:id/read', /* requireAuth, */ markRead);
+// protect as needed
+router.get('/', requireAuth, list);
+router.post('/', requireAuth, create);
+router.post('/:id/read', requireAuth, markRead);
+router.delete('/:id', requireAuth, remove);
 
 export default router;

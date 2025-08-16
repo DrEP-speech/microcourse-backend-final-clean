@@ -1,38 +1,23 @@
 // controllers/notificationController.js
-import Notification from '../models/Notification.js';
-import { asyncRoute, parsePagination, ok, created, fail, requireFields } from './_utils.js';
+// Stubbed handlers — replace with real DB logic when ready
 
-const listNotifications = async (req, res) => {
-  try {
-    const { skip, limit, sort, page } = parsePagination(req);
-    const filter = req.query.userId ? { user: req.query.userId } : {};
-    const [items, total] = await Promise.all([
-      Notification.find(filter).sort(sort).skip(skip).limit(limit).lean(),
-      Notification.countDocuments(filter),
-    ]);
-    return ok(res, items, { page, limit, total, pages: Math.ceil(total / limit) });
-  } catch (err) { return fail(res, err); }
-};
+export async function list(req, res) {
+  // Return an empty list for now (scoped to user if you prefer)
+  return res.json({ success: true, items: [] });
+}
 
-const createNotification = async (req, res) => {
-  try {
-    requireFields(req.body || {}, ['user', 'type', 'message']);
-    const n = await Notification.create(req.body);
-    return created(res, { id: n._id });
-  } catch (err) { return fail(res, err); }
-};
+export async function create(req, res) {
+  // Accept { title, body } for now
+  const { title = '', body = '' } = req.body || {};
+  return res.status(201).json({ success: true, notification: { id: 'stub', title, body, read: false } });
+}
 
-const markRead = async (req, res) => {
-  try {
-    const n = await Notification.findByIdAndUpdate(req.params.id, { read: true }, { new: true }).lean();
-    if (!n) return res.status(404).json({ success: false, message: 'Not found' });
-    return ok(res, n);
-  } catch (err) { return fail(res, err); }
-};
+export async function markRead(req, res) {
+  const { id } = req.params;
+  return res.json({ success: true, id, read: true });
+}
 
-export { listNotifications, createNotification, markRead };
-export default {
-  listNotifications: asyncRoute(listNotifications),
-  createNotification: asyncRoute(createNotification),
-  markRead: asyncRoute(markRead),
-};
+export async function remove(req, res) {
+  const { id } = req.params;
+  return res.json({ success: true, id, deleted: true });
+}
