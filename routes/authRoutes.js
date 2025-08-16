@@ -1,13 +1,25 @@
 // routes/authRoutes.js
-import { Router } from "express";
-import { signup, login, me, logout } from "../controllers/authController.js";
-import { requireAuth } from "../middleware/auth.js";
+const express = require('express');
+const router = express.Router();
 
-const router = Router();
+const { signup, login, me, refresh, logout } = require('../controllers/authController');
+const { requireAuth } = require('../middleware/requireAuth');
+const { validate } = require('../middleware/validate');
+const { SignupBody, LoginBody } = require('../validators/authSchemas');
 
-router.post("/signup", signup);
-router.post("/login", login);
-router.get("/me", requireAuth, me);
-router.post("/logout", logout);
+// POST /api/auth/signup
+router.post('/signup', validate(SignupBody), signup);
 
-export default router;
+// POST /api/auth/login
+router.post('/login', validate(LoginBody), login);
+
+// GET /api/auth/me
+router.get('/me', requireAuth(), me);
+
+// POST /api/auth/refresh  (uses refresh cookie; no body required)
+router.post('/refresh', refresh);
+
+// POST /api/auth/logout
+router.post('/logout', logout);
+
+module.exports = router;

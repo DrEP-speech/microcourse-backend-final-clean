@@ -1,119 +1,301 @@
-// controllers/authController.js
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import User from "../models/User.js";
+/**
+ * controllers/authController.js
+ *
+ * Auth controller that returns JWTs on login/signup and (optionally) sets
+ * httpOnly cookies for access/refresh tokens. Includes a robust /me reader
+ * that works with either Authorization: Bearer <token> or a mc_token cookie.
+ *
+ * Response shapes (stable):
+ * - 200/201:
+ *   { success: true, user: { _id, email, name, role, createdAt, updatedAt }, token?: string, accessToken?: string }
+ * - 400/401/409/500:
+ *   { success: false, message: string, details?: any }
+ */
 
-const COOKIE_NAME = process.env.COOKIE_NAME || "mc_token";
-const JWT_SECRET = process.env.JWT_SECRET || "change-me";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
-/** Build a safe user payload (omit password, etc.) */
-const toPublicUser = (u) => ({
-  _id: u._id,
-  email: u.email,
-  name: u.name ?? u.displayName ?? "",
-  role: u.role ?? "user",
-  createdAt: u.createdAt,
-  updatedAt: u.updatedAt,
-});
-
-/** Sign a JWT */
-function signToken(userId) {
-  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
-
-/** Set the auth cookie with SameSite=None for cross-site usage (Vercel -> Render) */
-function setAuthCookie(res, token) {
-  // secure cookies required for SameSite=None, and when behind proxies (Vercel/Render)
-  const isProd = process.env.NODE_ENV === "production";
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: isProd,         // must be true on HTTPS (Vercel/Render)
-    sameSite: "none",       // allow cross-site requests from your frontend
-    path: "/",
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-  });
-}
-
-/** Clear auth cookie */
-function clearAuthCookie(res) {
-  const isProd = process.env.NODE_ENV === "production";
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "none",
-    path: "/",
-  });
-}
-
-export const signup = async (req, res) => {
-  try {
-    const { email, password, name = "" } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: "email and password required" });
+// ---- Import your User model (adjust path/name as needed) --------------------
+let User;
+try { User = require('../models/userModel'); } catch (e1) {
+  try { User = require('../models/User'); } catch (e2) {
+    try { User = require('../models/user'); } catch (e3) {
+      throw new Error('User model not found. Adjust import in controllers/authController.js');
     }
+  }
+}
 
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res.status(409).json({ success: false, message: "Email already registered" });
-    }
+// ---- Configuration via ENV --------------------------------------------------
+const {
+  JWT_SECRET = '',
+  JWT_EXPIRES_IN = '15m',
 
-    const hash = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, password: hash, name });
+  REFRESH_TOKEN_SECRET,
+  REFRESH_TOKEN_EXPIRES_IN = '7d',
 
-    const token = signToken(user._id.toString());
-    setAuthCookie(res, token);
+  SET_ACCESS_COOKIE = 'false',                 // 'true' to also set access token cookie
+  ACCESS_COOKIE_NAME = 'mc_token',            // aligns with your Next.js proxy
+  REFRESH_COOKIE_NAME = 'rt',
 
-    return res.status(201).json({ success: true, user: toPublicUser(user) });
-  } catch (err) {
-    console.error("signup error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+  COOKIE_DOMAIN,
+  NODE_ENV = 'development',
+} = process.env;
+
+if (!JWT_SECRET && NODE_ENV === 'production') {
+  console.warn('[auth] JWT_SECRET is missing in production!');
+}
+
+const REFRESH_SECRET = REFRESH_TOKEN_SECRET || JWT_SECRET;
+
+const baseCookie = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: NODE_ENV === 'production',
+  path: '/',
+  ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
+};
+
+// ---- Helpers ---------------------------------------------------------------
+
+const sanitizeUser = (u) => {
+  if (!u) return null;
+  return {
+    _id: u._id,
+    email: u.email,
+    name: u.name,
+    role: u.role,
+    createdAt: u.createdAt,
+    updatedAt: u.updatedAt,
+  };
+};
+
+const signAccessToken = (userId) =>
+  jwt.sign({ sub: String(userId) }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+const signRefreshToken = (userId) =>
+  jwt.sign({ sub: String(userId) }, REFRESH_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+
+const setAuthCookies = (res, { accessToken, refreshToken }) => {
+  if (String(SET_ACCESS_COOKIE).toLowerCase() === 'true' && accessToken) {
+    // Optional cookie for access token (you typically let Next proxy set mc_token)
+    res.cookie(ACCESS_COOKIE_NAME, accessToken, {
+      ...baseCookie,
+      maxAge: msToNumber(JWT_EXPIRES_IN), // best-effort
+    });
+  }
+
+  if (refreshToken) {
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
+      ...baseCookie,
+      maxAge: msToNumber(REFRESH_TOKEN_EXPIRES_IN),
+    });
   }
 };
 
-export const login = async (req, res) => {
+const clearAuthCookies = (res) => {
+  res.cookie(ACCESS_COOKIE_NAME, '', { ...baseCookie, maxAge: 0 });
+  res.cookie(REFRESH_COOKIE_NAME, '', { ...baseCookie, maxAge: 0 });
+};
+
+const getTokenFromReq = (req) => {
+  // Authorization: Bearer <token>
+  const h = req.headers?.authorization || req.headers?.Authorization;
+  if (h && typeof h === 'string') {
+    const parts = h.split(' ');
+    if (parts.length === 2 && /^Bearer$/i.test(parts[0])) {
+      return parts[1];
+    }
+  }
+  // Fallback to cookie (used by your Next proxy)
+  return req.cookies?.[ACCESS_COOKIE_NAME] || null;
+};
+
+// Best-effort ms parser for '15m', '7d', etc. (fallback to 1 day)
+function msToNumber(expr) {
+  if (!expr || typeof expr !== 'string') return 24 * 60 * 60 * 1000;
+  const m = expr.match(/^(\d+)(ms|s|m|h|d)$/i);
+  if (!m) return 24 * 60 * 60 * 1000;
+  const n = Number(m[1]);
+  const unit = m[2].toLowerCase();
+  const map = { ms: 1, s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
+  return n * (map[unit] || 86_400_000);
+}
+
+// Basic validators (swap for Zod/Joi if you prefer)
+const isEmail = (v) => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const isNonEmpty = (v) => typeof v === 'string' && v.trim().length > 0;
+
+// ---- Controllers -----------------------------------------------------------
+
+/**
+ * POST /api/auth/signup
+ * body: { name, email, password }
+ */
+async function signup(req, res) {
+  try {
+    const { name, email, password } = req.body || {};
+
+    if (!isNonEmpty(name) || !isEmail(email) || !isNonEmpty(password)) {
+      return res.status(400).json({ success: false, message: 'Invalid signup payload' });
+    }
+
+    const existing = await User.findOne({ email }).lean();
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'Email already in use' });
+    }
+
+    // Hash if your model doesn't already hash in a pre-save hook
+    let hashed = password;
+    if (!User.schema?.paths?.password?.options?.select === false) {
+      const salt = await bcrypt.genSalt(10);
+      hashed = await bcrypt.hash(password, salt);
+    }
+
+    const created = await User.create({ name, email, password: hashed });
+    const user = sanitizeUser(created);
+
+    const accessToken = signAccessToken(user._id);
+    const refreshToken = signRefreshToken(user._id);
+
+    setAuthCookies(res, { accessToken, refreshToken });
+
+    // Return token fields so the Next.js proxy can set mc_token
+    return res.status(201).json({
+      success: true,
+      user,
+      token: accessToken,         // legacy key some clients expect
+      accessToken,                // modern explicit key
+    });
+  } catch (err) {
+    console.error('Signup error:', err);
+    return res.status(500).json({ success: false, message: 'Signup failed', details: String(err?.message || err) });
+  }
+}
+
+/**
+ * POST /api/auth/login
+ * body: { email, password }
+ */
+async function login(req, res) {
   try {
     const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: "email and password required" });
+
+    if (!isEmail(email) || !isNonEmpty(password)) {
+      return res.status(400).json({ success: false, message: 'Invalid login payload' });
     }
 
-    const user = await User.findOne({ email }).select("+password");
-    if (!user) return res.status(401).json({ success: false, message: "Invalid credentials" });
+    // Make sure to select password if your schema uses select:false
+    const userDoc = await User.findOne({ email }).select('+password');
+    if (!userDoc) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
 
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(401).json({ success: false, message: "Invalid credentials" });
+    const ok = await bcrypt.compare(password, userDoc.password);
+    if (!ok) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
 
-    const token = signToken(user._id.toString());
-    setAuthCookie(res, token);
+    const user = sanitizeUser(userDoc);
+    const accessToken = signAccessToken(user._id);
+    const refreshToken = signRefreshToken(user._id);
 
-    return res.json({ success: true, user: toPublicUser(user) });
+    setAuthCookies(res, { accessToken, refreshToken });
+
+    return res.json({
+      success: true,
+      user,
+      token: accessToken,
+      accessToken,
+    });
   } catch (err) {
-    console.error("login error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    console.error('Login error:', err);
+    return res.status(500).json({ success: false, message: 'Login failed', details: String(err?.message || err) });
   }
-};
+}
 
-export const me = async (req, res) => {
+/**
+ * GET /api/auth/me
+ * Reads token from Authorization Bearer or mc_token cookie.
+ * If you're using a separate requireAuth middleware, this still works as a fallback.
+ */
+async function me(req, res) {
   try {
-    // prefer middleware-populated req.user; fallback to decoding cookie
-    if (req.user) {
-      return res.json({ success: true, user: toPublicUser(req.user) });
+    let userId = req.user?.id || req.user?._id; // if middleware already decoded
+
+    if (!userId) {
+      const token = getTokenFromReq(req);
+      if (!token) return res.status(401).json({ user: null });
+
+      try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        userId = payload.sub;
+      } catch (e) {
+        return res.status(401).json({ user: null });
+      }
     }
-    const token = req.cookies?.[COOKIE_NAME];
-    if (!token) return res.status(401).json({ success: false, message: "Not authenticated" });
 
-    const payload = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(payload.sub);
-    if (!user) return res.status(401).json({ success: false, message: "Not authenticated" });
+    const userDoc = await User.findById(userId).lean();
+    if (!userDoc) return res.status(401).json({ user: null });
 
-    return res.json({ success: true, user: toPublicUser(user) });
+    return res.json({ user: sanitizeUser(userDoc) });
   } catch (err) {
-    return res.status(401).json({ success: false, message: "Not authenticated" });
+    console.error('ME error:', err);
+    return res.status(500).json({ success: false, message: 'ME failed', details: String(err?.message || err) });
   }
-};
+}
 
-export const logout = async (_req, res) => {
-  clearAuthCookie(res);
-  return res.json({ success: true });
+/**
+ * POST /api/auth/refresh
+ * Uses httpOnly refresh cookie to mint a new access token.
+ */
+async function refresh(req, res) {
+  try {
+    const rt = req.cookies?.[REFRESH_COOKIE_NAME];
+    if (!rt) return res.status(401).json({ success: false, message: 'No refresh token' });
+
+    let payload;
+    try {
+      payload = jwt.verify(rt, REFRESH_SECRET);
+    } catch (e) {
+      return res.status(401).json({ success: false, message: 'Invalid refresh token' });
+    }
+
+    const userDoc = await User.findById(payload.sub).lean();
+    if (!userDoc) return res.status(401).json({ success: false, message: 'User not found' });
+
+    const accessToken = signAccessToken(userDoc._id);
+    setAuthCookies(res, { accessToken, refreshToken: null });
+
+    return res.json({
+      success: true,
+      accessToken,
+      token: accessToken,
+      user: sanitizeUser(userDoc),
+    });
+  } catch (err) {
+    console.error('Refresh error:', err);
+    return res.status(500).json({ success: false, message: 'Refresh failed', details: String(err?.message || err) });
+  }
+}
+
+/**
+ * POST /api/auth/logout
+ * Clears auth cookies. (Clients should also forget any in-memory tokens.)
+ */
+async function logout(req, res) {
+  try {
+    clearAuthCookies(res);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Logout error:', err);
+    return res.status(500).json({ success: false, message: 'Logout failed', details: String(err?.message || err) });
+  }
+}
+
+module.exports = {
+  signup,
+  login,
+  me,
+  refresh,
+  logout,
 };

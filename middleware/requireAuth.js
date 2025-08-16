@@ -1,20 +1,49 @@
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+// middleware/requireAuth.js
+const jwt = require('jsonwebtoken');
 
-const { JWT_SECRET = "change-me", COOKIE_NAME = "token" } = process.env;
+const {
+  JWT_SECRET = '',
+  ACCESS_COOKIE_NAME = 'mc_token',
+  NODE_ENV = 'development',
+} = process.env;
 
-export async function requireAuth(req, res, next) {
-  try {
-    const token = req.cookies?.[COOKIE_NAME];
-    if (!token) return res.status(401).json({ success: false, message: "Unauthenticated" });
-
-    const payload = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(payload.sub).select("_id email");
-    if (!user) return res.status(401).json({ success: false, message: "Unauthenticated" });
-
-    req.user = { id: user._id, email: user.email };
-    next();
-  } catch {
-    return res.status(401).json({ success: false, message: "Unauthenticated" });
+function getToken(req) {
+  const h = req.headers?.authorization || req.headers?.Authorization;
+  if (h && typeof h === 'string') {
+    const [type, token] = h.split(' ');
+    if (/^Bearer$/i.test(type) && token) return token;
   }
+  return req.cookies?.[ACCESS_COOKIE_NAME] || null;
 }
+
+/**
+ * requireAuth({ roles?: string[] })
+ * Example: router.get('/admin', requireAuth({ roles: ['admin'] }), handler)
+ */
+function requireAuth(opts = {}) {
+  const roles = Array.isArray(opts.roles) ? opts.roles : null;
+
+  return (req, res, next) => {
+    try {
+      const token = getToken(req);
+      if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+      const payload = jwt.verify(token, JWT_SECRET);
+      req.user = { id: payload.sub, ...payload };
+
+      if (roles && roles.length > 0) {
+        const userRole = req.user.role || req.user.claims?.role;
+        if (!roles.includes(userRole)) {
+          return res.status(403).json({ success: false, message: 'Forbidden' });
+        }
+      }
+
+      return next();
+    } catch (err) {
+      const code = err?.name === 'TokenExpiredError' ? 401 : 401;
+      return res.status(code).json({ success: false, message: 'Unauthorized' });
+    }
+  };
+}
+
+module.exports = { requireAuth };
