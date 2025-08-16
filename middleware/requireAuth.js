@@ -1,49 +1,31 @@
 // middleware/requireAuth.js
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-const {
-  JWT_SECRET = '',
-  ACCESS_COOKIE_NAME = 'mc_token',
-  NODE_ENV = 'development',
-} = process.env;
+const { JWT_SECRET = 'change-me', ACCESS_COOKIE_NAME = 'mc_token' } = process.env;
 
-function getToken(req) {
-  const h = req.headers?.authorization || req.headers?.Authorization;
-  if (h && typeof h === 'string') {
-    const [type, token] = h.split(' ');
-    if (/^Bearer$/i.test(type) && token) return token;
-  }
-  return req.cookies?.[ACCESS_COOKIE_NAME] || null;
-}
+export default async function requireAuth(req, res, next) {
+  try {
+    let token;
+    const auth = req.headers?.authorization || '';
+    if (auth.toLowerCase().startsWith('bearer ')) token = auth.slice(7).trim();
+    if (!token && req.cookies) token = req.cookies[ACCESS_COOKIE_NAME];
 
-/**
- * requireAuth({ roles?: string[] })
- * Example: router.get('/admin', requireAuth({ roles: ['admin'] }), handler)
- */
-function requireAuth(opts = {}) {
-  const roles = Array.isArray(opts.roles) ? opts.roles : null;
+    if (!token) return res.status(401).json({ success: false, message: 'Not authenticated' });
 
-  return (req, res, next) => {
+    let payload;
     try {
-      const token = getToken(req);
-      if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-      const payload = jwt.verify(token, JWT_SECRET);
-      req.user = { id: payload.sub, ...payload };
-
-      if (roles && roles.length > 0) {
-        const userRole = req.user.role || req.user.claims?.role;
-        if (!roles.includes(userRole)) {
-          return res.status(403).json({ success: false, message: 'Forbidden' });
-        }
-      }
-
-      return next();
-    } catch (err) {
-      const code = err?.name === 'TokenExpiredError' ? 401 : 401;
-      return res.status(code).json({ success: false, message: 'Unauthorized' });
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ success: false, message: 'Invalid token' });
     }
-  };
-}
 
-module.exports = { requireAuth };
+    const user = await User.findById(payload.sub);
+    if (!user) return res.status(401).json({ success: false, message: 'User not found' });
+
+    req.user = user;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
