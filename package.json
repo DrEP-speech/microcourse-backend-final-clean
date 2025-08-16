@@ -1,35 +1,36 @@
 {
   "name": "microcourse-backend-final-clean",
   "version": "1.0.0",
-  "description": "MicroCourse backend (Express, ESM) with CORS allow-list, rate limits, Swagger docs, and cookie-based auth support.",
+  "description": "MicroCourse backend (Express/Mongo) with cookies, CORS, rate limits, Swagger",
   "type": "module",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.17 <23"
+  },
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon --watch ./ --ext js,json,yaml --signal SIGTERM server.js",
+    "dev": "nodemon server.js",
     "lint": "eslint .",
-    "prepare": "node -e \"try{require('fs').mkdirSync('docs',{recursive:true})}catch{}\""
-  },
-  "engines": {
-    "node": ">=20.0.0"
+    "prepare": "husky install"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "express-rate-limit": "^7.4.0",
+    "express-rate-limit": "^7.2.0",
     "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.6.1",
     "morgan": "^1.10.0",
+    "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^9.0.1",
     "yaml": "^2.4.5"
-    /* add "mongoose": "^8.x" or any DB libs you use */
   },
   "devDependencies": {
-    "nodemon": "^3.1.0",
-    "eslint": "^9.9.0"
-  },
-  "license": "MIT"
+    "eslint": "^8.57.0",
+    "nodemon": "^3.1.4"
+  }
 }
