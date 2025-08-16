@@ -1,35 +1,35 @@
 {
   "name": "microcourse-backend-final-clean",
   "version": "1.0.0",
-  "main": "server.js",
+  "description": "MicroCourse backend (Express, ESM) with CORS allow-list, rate limits, Swagger docs, and cookie-based auth support.",
   "type": "module",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "kill-port 5000 && nodemon server.js"
+    "dev": "nodemon --watch ./ --ext js,json,yaml --signal SIGTERM server.js",
+    "lint": "eslint .",
+    "prepare": "node -e \"try{require('fs').mkdirSync('docs',{recursive:true})}catch{}\""
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20.0.0"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "compression": "^1.8.1",
-    "cookie-parser": "^1.4.7",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.21.2",
-    "express-async-handler": "^1.2.0",
-    "express-rate-limit": "^8.0.1",
-    "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^7.8.7",
-    "morgan": "^1.10.1",
-    "swagger-jsdoc": "^6.2.8",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^11.1.0",
-    "zod": "^4.0.17"
+    "uuid": "^9.0.1",
+    "yaml": "^2.4.5"
+    /* add "mongoose": "^8.x" or any DB libs you use */
   },
   "devDependencies": {
-    "kill-port": "^2.0.1",
-    "nodemon": "^3.0.1"
-  }
+    "nodemon": "^3.1.0",
+    "eslint": "^9.9.0"
+  },
+  "license": "MIT"
 }

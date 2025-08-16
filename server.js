@@ -1,52 +1,117 @@
-// server.js
-'use strict';
+// server.js  — Node 20+, ESM
 
-require('dotenv').config();
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { parse as parseYAML } from 'yaml';
+import { v4 as uuidv4 } from 'uuid';
 
-const path = require('path');
-const fs = require('fs');
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const cookieParser = require('cookie-parser');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const { v4: uuidv4 } = require('uuid');
-const mongoose = require('mongoose');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
+// ---- If you have DB connect helper, keep this import ----
+import connectDB from './config/db.js';
 
-const pkg = safeRequire('./package.json') || { name: 'microcourse-backend', version: '0.0.0' };
+// ---- Your route groups (ensure these files exist) ----
+import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import badgeRoutes from './routes/badgeRoutes.js';
+import courseRoutes from './routes/courseRoutes.js';
+import lessonRoutes from './routes/lessonRoutes.js';
+import quizRoutes from './routes/quizRoutes.js';
+import quizResultRoutes from './routes/quizResultRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import emailRoutes from './routes/emailRoutes.js';
+import pdfRoutes from './routes/pdfRoutes.js';
+import insightsRoutes from './routes/insightsRoutes.js';
+// import analyticsRoutes from './routes/analyticsRoutes.js'; // add if/when present
 
-/* ========================= ENV & CONSTANTS ========================= */
+/* ============================ CONFIG ============================ */
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const isProd = NODE_ENV === 'production';
 const PORT = Number(process.env.PORT || 5000);
-const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || '';
 
+// Base prefixes:  /api  and optionally /api/v1
 const API_PREFIX = process.env.API_PREFIX || '/api';
-const API_VERSION = process.env.API_VERSION || ''; // e.g. 'v1' to get '/api/v1'
+const API_VERSION = process.env.API_VERSION || ''; // set to 'v1' to enable versioned alias
 const API_BASE = API_VERSION ? `${API_PREFIX}/${API_VERSION}` : API_PREFIX;
 
-// CORS allow-list (comma separated). Supports wildcard subdomains like https://*.your-domain.com
-const CORS_ORIGINS =
-  (process.env.CORS_ORIGINS && process.env.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)) ||
-  [
-    process.env.FRONTEND_ORIGIN,
-    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-  ].filter(Boolean);
+// CORS allow-list (comma-sep). Supports wildcards like https://*.your-domain.com
+// Examples: "https://app.your-domain.com,https://*.your-domain.com,http://localhost:3000"
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
 
-const ACCESS_COOKIE_NAME = process.env.ACCESS_COOKIE_NAME || 'mc_token';
+// Helper to match origins with simple wildcard support
+const toOriginRegex = (pattern) => {
+  // allow http or https
+  let p = pattern
+    .replace(/^https?:\/\//, '')       // strip scheme
+    .replace(/\./g, '\\.')             // escape dots
+    .replace(/\*/g, '.*');             // wildcard
+  return new RegExp(`^https?:\\/\\/${p}$`, 'i');
+};
+const matchOrigin = (origin, pattern) => toOriginRegex(pattern).test(origin);
 
-/* ========================= APP BOOTSTRAP ========================= */
+// CORS options
+const corsOptions = {
+  origin(origin, cb) {
+    // allow same-origin / server-to-server / curl(no origin)
+    if (!origin) return cb(null, true);
+
+    // allow everything if list is empty or contains "*"
+    if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes('*')) {
+      return cb(null, true);
+    }
+
+    const allowed = CORS_ORIGINS.some((pat) => matchOrigin(origin, pat));
+    cb(allowed ? null : new Error(`CORS blocked for: ${origin}`), allowed);
+  },
+  credentials: true,
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-Id'],
+  optionsSuccessStatus: 204,
+  maxAge: 86400,
+};
+
+// Swagger loader (prefers docs/openapi.yaml if present)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+function loadOpenApiSpec() {
+  const yamlPath = path.join(__dirname, 'docs', 'openapi.yaml');
+  if (fs.existsSync(yamlPath)) {
+    const raw = fs.readFileSync(yamlPath, 'utf8');
+    return parseYAML(raw);
+  }
+  // Minimal fallback spec so /docs always works
+  return {
+    openapi: '3.0.3',
+    info: { title: 'MicroCourse API', version: '1.0.0' },
+    servers: [{ url: API_PREFIX }, API_VERSION ? { url: API_BASE } : null].filter(Boolean),
+    paths: {
+      '/auth/login': { post: { summary: 'Login', responses: { '200': { description: 'OK' } } } },
+      '/auth/signup': { post: { summary: 'Sign up', responses: { '201': { description: 'Created' } } } },
+      '/auth/me': { get: { summary: 'Current user', responses: { '200': { description: 'OK' } } } },
+    },
+  };
+}
+
+/* ============================ APP BOOTSTRAP ============================ */
 
 const app = express();
-app.set('trust proxy', 1); // required for secure cookies behind proxies
 
-// Request ID + response header
+// Needed for secure cookies behind Render/other proxies
+app.set('trust proxy', 1);
+
+// Request ID for tracing
 app.use((req, res, next) => {
   req.id = req.headers['x-request-id'] || uuidv4();
   res.setHeader('X-Request-Id', req.id);
@@ -54,224 +119,139 @@ app.use((req, res, next) => {
 });
 
 // Logging
-app.use(morgan(NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(morgan(isProd ? 'combined' : 'dev'));
 
 // Security headers
 app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
-  })
+  }),
 );
 
 // Compression
 app.use(compression());
 
-// Parsers
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true }));
+// Body parsers
+app.use(express.json({ limit: process.env.JSON_LIMIT || '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: process.env.FORM_LIMIT || '1mb' }));
 app.use(cookieParser());
 
-// CORS with allow-list + wildcard subdomain support
-const corsOptions = {
-  origin(origin, cb) {
-    if (!origin) return cb(null, true); // same-origin / curl
-    const allowed = CORS_ORIGINS.some(pattern => matchOrigin(origin, pattern));
-    cb(allowed ? null : new Error(`CORS blocked for origin ${origin}`), allowed);
-  },
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-Id'],
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  maxAge: 86400,
-};
+// CORS + preflight
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // preflight
+app.options('*', cors(corsOptions));
 
-/* ========================= RATE LIMITING ========================= */
+/* ============================ RATE LIMITS ============================ */
 
-// Global limiter for /api/*
+// Global limiter for everything under /api
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.RL_API_MAX ? Number(process.env.RL_API_MAX) : (NODE_ENV === 'production' ? 500 : 1000),
+  windowMs: Number(process.env.RL_WINDOW_MS || 15 * 60 * 1000), // 15m
+  max: Number(process.env.RL_MAX || (isProd ? 100 : 1000)),
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 // Stricter limiter for /auth/login
 const authLoginLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: process.env.RL_LOGIN_MAX ? Number(process.env.RL_LOGIN_MAX) : (NODE_ENV === 'production' ? 10 : 100),
-  message: { success: false, message: 'Too many login attempts. Please try again later.' },
+  windowMs: Number(process.env.RL_LOGIN_WINDOW_MS || 10 * 60 * 1000), // 10m
+  max: Number(process.env.RL_LOGIN_MAX || (isProd ? 10 : 100)),
   standardHeaders: true,
   legacyHeaders: false,
+  message: { success: false, message: 'Too many login attempts. Please try again later.' },
 });
-app.use(`${API_PREFIX}/`, apiLimiter);         // e.g. /api/*
-if (API_VERSION) app.use(`${API_BASE}/`, apiLimiter); // also versioned base
 
-/* ========================= HEALTH / ROOT ========================= */
+// Apply global limiter to API bases
+app.use(API_PREFIX, apiLimiter);
+if (API_VERSION) app.use(API_BASE, apiLimiter);
 
-app.get('/', (_req, res) => res.json({ ok: true, name: pkg.name, version: pkg.version }));
+/* ============================ HEALTH / ROOT ============================ */
+
+app.get('/', (_req, res) =>
+  res.json({ ok: true, name: 'microcourse-backend', env: NODE_ENV }),
+);
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 app.get('/readyz', (_req, res) => {
-  const up = mongoose.connection.readyState === 1;
+  // If you use mongoose, you can check readiness here
+  // const up = mongoose.connection.readyState === 1;
+  const up = true;
   res.status(up ? 200 : 503).json({ ok: up });
 });
 
-/* ========================= SWAGGER / OPENAPI ========================= */
+/* ============================ DOCS (Swagger) ============================ */
 
-// Prefer ./docs/openapi.json if present; otherwise, build from swagger-jsdoc
-const openapiPath = path.join(__dirname, 'docs', 'openapi.json');
-let openapiSpec;
-
-if (fs.existsSync(openapiPath)) {
-  openapiSpec = JSON.parse(fs.readFileSync(openapiPath, 'utf-8'));
-} else {
-  openapiSpec = swaggerJsdoc({
-    definition: {
-      openapi: '3.0.3',
-      info: { title: `${pkg.name} API`, version: pkg.version },
-      servers: [
-        { url: API_BASE, description: 'Base API' },
-        { url: API_PREFIX, description: 'Unversioned API' },
-      ],
-    },
-    apis: [
-      path.join(__dirname, 'routes', '**', '*.js'),
-      path.join(__dirname, 'controllers', '**', '*.js'),
-      // add model schemas if you annotate them
-    ],
-  });
-}
+const openapiSpec = loadOpenApiSpec();
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, { explorer: true }));
 
-/* ========================= ROUTES ========================= */
+/* ============================ ROUTES ============================ */
 
-// NOTE: we mount BOTH unversioned (/api) and versioned (/api/v1) aliases
+// NOTE: we mount BOTH unversioned (/api) and versioned (/api/v1) aliases.
 const mount = (subpath, router) => {
   if (!router) return;
-  // per-route limiters (example: /auth/login)
+  // Per-route limiter example
   if (subpath === '/auth') {
-    app.use(`${API_PREFIX}/auth/login`, authLoginLimiter);
-    if (API_VERSION) app.use(`${API_BASE}/auth/login`, authLoginLimiter);
+    app.use(`${API_PREFIX}${subpath}/login`, authLoginLimiter);
+    if (API_VERSION) app.use(`${API_BASE}${subpath}/login`, authLoginLimiter);
   }
   app.use(`${API_PREFIX}${subpath}`, router);
   if (API_VERSION) app.use(`${API_BASE}${subpath}`, router);
 };
 
-// Load route groups (use safeRequire so server boots even if file is missing)
-const authRoutes      = safeRequire('./routes/authRoutes');
-const userRoutes      = safeRequire('./routes/userRoutes');
-const courseRoutes    = safeRequire('./routes/courseRoutes');
-const lessonRoutes    = safeRequire('./routes/lessonRoutes');
-const quizRoutes      = safeRequire('./routes/quizRoutes');
-const analyticsRoutes = safeRequire('./routes/analyticsRoutes');
-
-// Mount groups
 mount('/auth', authRoutes);
 mount('/users', userRoutes);
+mount('/badges', badgeRoutes);
 mount('/courses', courseRoutes);
 mount('/lessons', lessonRoutes);
 mount('/quizzes', quizRoutes);
-mount('/analytics', analyticsRoutes);
+mount('/quiz-results', quizResultRoutes);
+mount('/notifications', notificationRoutes);
+mount('/emails', emailRoutes);
+mount('/pdf', pdfRoutes);
+mount('/insights', insightsRoutes);
+// mount('/analytics', analyticsRoutes);
 
-/* ========================= 404 + ERROR HANDLER ========================= */
+/* ============================ 404 + ERROR ============================ */
 
-app.use(`${API_PREFIX}`, (_req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
-if (API_VERSION) {
-  app.use(`${API_BASE}`, (_req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
-}
-
-// Zod-aware error handler
-app.use((err, req, res, _next) => {
-  const zod = safeRequire('zod');
-  const isZod = zod && err instanceof zod.ZodError;
-
-  const status = err.status || err.statusCode || (isZod ? 400 : 500);
-  const payload = {
+app.use((req, res) => {
+  res.status(404).json({
     success: false,
-    message: isZod ? 'Validation failed' : err.message || 'Internal Server Error',
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
     requestId: req.id,
-  };
-
-  if (isZod) payload.details = err.format();
-  else if (NODE_ENV !== 'production') payload.stack = err.stack;
-
-  res.status(status).json(payload);
+  });
 });
 
-/* ========================= DB + BOOT ========================= */
+// Central error handler
+// (Make sure this is the last middleware)
+app.use((err, _req, res, _next) => {
+  const code = err.status || err.statusCode || 500;
+  const payload = {
+    success: false,
+    message: err.message || 'Server Error',
+    requestId: _req?.id,
+  };
+  if (!isProd && err.stack) payload.stack = err.stack;
+  res.status(code).json(payload);
+});
 
-let server;
+/* ============================ START ============================ */
 
-async function start() {
-  await connectMongo();
-  server = app.listen(PORT, () => {
-    console.log(`✅ Server listening on :${PORT}`);
-    console.log(`CORS origins: ${CORS_ORIGINS.join(', ') || '(none)'}`);
-    console.log(`API prefix: ${API_PREFIX}${API_VERSION ? ` (versioned alias: ${API_BASE})` : ''}`);
-    console.log(`Swagger UI: /docs`);
-  });
-  wireShutdown();
-}
-
-async function connectMongo() {
-  if (!MONGO_URI) {
-    console.warn('⚠️  No MONGO_URI provided. Skipping DB connect (only okay for local dev without DB).');
-    return;
-  }
+(async () => {
   try {
-    await mongoose.connect(MONGO_URI, {
-      autoIndex: NODE_ENV !== 'production',
-      serverSelectionTimeoutMS: 15000,
+    // connect DB if you have one
+    if (typeof connectDB === 'function') {
+      await connectDB();
+    }
+    app.listen(PORT, () => {
+      if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes('*')) {
+        console.log(`CORS: allowing all origins`);
+      } else {
+        console.log(`CORS: allowed origins -> ${CORS_ORIGINS.join(', ')}`);
+      }
+      console.log(`✅ Server listening on :${PORT} (${NODE_ENV})`);
     });
-    console.log('✅ Mongo connected');
   } catch (e) {
-    console.error('❌ Mongo connection error:', e.message);
+    console.error('❌ Failed to start server:', e);
     process.exit(1);
   }
-}
+})();
 
-function wireShutdown() {
-  const close = async (signal) => {
-    console.log(`\n${signal} received. Shutting down…`);
-    try {
-      if (server) await new Promise((r) => server.close(r));
-      if (mongoose.connection.readyState !== 0) await mongoose.disconnect();
-      console.log('✅ Clean shutdown');
-      process.exit(0);
-    } catch (e) {
-      console.error('❌ Error during shutdown', e);
-      process.exit(1);
-    }
-  };
-  ['SIGINT', 'SIGTERM'].forEach(sig => process.on(sig, () => close(sig)));
-}
-
-/* ========================= HELPERS ========================= */
-
-function safeRequire(p) {
-  try { return require(p); } catch { return null; }
-}
-
-function matchOrigin(origin, pattern) {
-  if (!pattern) return false;
-  try {
-    const u = new URL(origin);
-    // wildcard like https://*.your-domain.com
-    const m = pattern.match(/^(https?):\/\/\*\.(.+)$/);
-    if (m) {
-      const [, proto, baseHost] = m;
-      return u.protocol === `${proto}:` && u.hostname.endsWith(`.${baseHost}`);
-    }
-    // exact match
-    return origin === pattern;
-  } catch {
-    return false;
-  }
-}
-
-if (require.main === module) {
-  start();
-}
-
-module.exports = app;
+export default app;
