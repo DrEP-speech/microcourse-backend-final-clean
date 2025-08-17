@@ -1,4 +1,8 @@
-// server.js  — Node 20+, ESM
+// server.js — ESM, Node 18/20+
+// ------------------------------------------------------------
+// Loads env, sets CORS allow-list (with wildcard support), rate limits,
+// cookies, health endpoints, Swagger UI at /docs, and raw spec at /openapi.json.
+// Also mounts both /api and /api/v1 aliases for each router.
 
 import 'dotenv/config';
 import express from 'express';
@@ -9,17 +13,17 @@ import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
+import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { parse as parseYAML } from 'yaml';
 import { v4 as uuidv4 } from 'uuid';
-import { existsSync, readFileSync } from 'fs';
 
-// ---- If you have DB connect helper, keep this import ----
+// ---- DB connect helper ----
 import connectDB from './config/db.js';
 
-// ---- Your route groups (ensure these files exist) ----
+// ---- Route groups (ensure these exist; comment out any you haven't created yet) ----
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import badgeRoutes from './routes/badgeRoutes.js';
@@ -31,50 +35,44 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import pdfRoutes from './routes/pdfRoutes.js';
 import insightsRoutes from './routes/insightsRoutes.js';
-// import analyticsRoutes from './routes/analyticsRoutes.js'; // add if/when present
+// import analyticsRoutes from './routes/analyticsRoutes.js';
 
-/* ============================ CONFIG ============================ */
+// ============================ CONFIG ============================
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const isProd = NODE_ENV === 'production';
 const PORT = Number(process.env.PORT || 5000);
 
-// Base prefixes:  /api  and optionally /api/v1
 const API_PREFIX = process.env.API_PREFIX || '/api';
-const API_VERSION = process.env.API_VERSION || ''; // set to 'v1' to enable versioned alias
+const API_VERSION = process.env.API_VERSION || ''; // e.g., 'v1'
 const API_BASE = API_VERSION ? `${API_PREFIX}/${API_VERSION}` : API_PREFIX;
 
-// CORS allow-list (comma-sep). Supports wildcards like https://*.your-domain.com
-// Examples: "https://app.your-domain.com,https://*.your-domain.com,http://localhost:3000"
+// CORS allow-list (comma-separated). Supports wildcards like https://*.your-domain.com
 const CORS_ORIGINS = (process.env.CORS_ORIGINS || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
 
-// Helper to match origins with simple wildcard support
+// Helpers to match wildcard origins (https://*.example.com)
 const toOriginRegex = (pattern) => {
-  // allow http or https
   let p = pattern
-    .replace(/^https?:\/\//, '')       // strip scheme
-    .replace(/\./g, '\\.')             // escape dots
-    .replace(/\*/g, '.*');             // wildcard
+    .replace(/^https?:\/\//, '') // strip scheme
+    .replace(/\./g, '\\.')
+    .replace(/\*/g, '.*');
   return new RegExp(`^https?:\\/\\/${p}$`, 'i');
 };
 const matchOrigin = (origin, pattern) => toOriginRegex(pattern).test(origin);
 
-// CORS options
 const corsOptions = {
   origin(origin, cb) {
-    // allow same-origin / server-to-server / curl(no origin)
+    // allow server-to-server/no-origin (curl), and same-origin
     if (!origin) return cb(null, true);
 
     // allow everything if list is empty or contains "*"
-    if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes('*')) {
-      return cb(null, true);
-    }
+    if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes('*')) return cb(null, true);
 
-    const allowed = CORS_ORIGINS.some((pat) => matchOrigin(origin, pat));
-    cb(allowed ? null : new Error(`CORS blocked for: ${origin}`), allowed);
+    const allowed = CORS_ORIGINS.some(pat => matchOrigin(origin, pat));
+    return cb(allowed ? null : new Error(`CORS blocked for: ${origin}`), allowed);
   },
   credentials: true,
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
@@ -92,7 +90,7 @@ function loadOpenApiSpec() {
     const raw = fs.readFileSync(yamlPath, 'utf8');
     return parseYAML(raw);
   }
-  // Minimal fallback spec so /docs always works
+  // Minimal fallback so /docs always works
   return {
     openapi: '3.0.3',
     info: { title: 'MicroCourse API', version: '1.0.0' },
@@ -105,11 +103,11 @@ function loadOpenApiSpec() {
   };
 }
 
-/* ============================ APP BOOTSTRAP ============================ */
+// ============================ APP BOOTSTRAP ============================
 
 const app = express();
 
-// Needed for secure cookies behind Render/other proxies
+// trust proxy for secure cookies (Render, Vercel, etc.)
 app.set('trust proxy', 1);
 
 // Request ID for tracing
@@ -142,7 +140,7 @@ app.use(cookieParser());
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
-/* ============================ RATE LIMITS ============================ */
+// ============================ RATE LIMITS ============================
 
 // Global limiter for everything under /api
 const apiLimiter = rateLimit({
@@ -161,54 +159,58 @@ const authLoginLimiter = rateLimit({
   message: { success: false, message: 'Too many login attempts. Please try again later.' },
 });
 
-// Apply global limiter to API bases
+// Apply global limiter to /api and /api/v1
 app.use(API_PREFIX, apiLimiter);
 if (API_VERSION) app.use(API_BASE, apiLimiter);
 
-/* ============================ HEALTH / ROOT ============================ */
+// ============================ HEALTH / ROOT ============================
 
-app.get('/', (_req, res) =>
-  res.json({ ok: true, name: 'microcourse-backend', env: NODE_ENV }),
-);
+app.get('/', (_req, res) => res.json({ ok: true, name: 'microcourse-backend', env: NODE_ENV }));
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 app.get('/readyz', (_req, res) => {
-  // If you use mongoose, you can check readiness here
-  // const up = mongoose.connection.readyState === 1;
-  const up = true;
+  // If mongoose is used, ensure it's ready
+  const up = mongoose?.connection?.readyState === 1;
   res.status(up ? 200 : 503).json({ ok: up });
 });
 
-/* ============================ DOCS (Swagger) ============================ */
+// ============================ DOCS (Swagger) ============================
 
 const openapiSpec = loadOpenApiSpec();
 
-// Serve the raw OpenAPI JSON for tooling
-app.get('/docs/openapi.json', (_req, res) => {
+// Serve raw OpenAPI JSON/YAML for tooling (MUST come before the UI mount)
+app.get('/openapi.json', (_req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=300'); // cache for 5 minutes
+  res.setHeader('Cache-Control', 'public, max-age=300');
   res.send(JSON.stringify(openapiSpec, null, 2));
 });
-
+app.get('/docs/openapi.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.send(JSON.stringify(openapiSpec, null, 2));
+});
 app.get('/docs/openapi.yaml', (_req, res) => {
   const yamlPath = path.join(__dirname, 'docs', 'openapi.yaml');
-  if (!existsSync(yamlPath)) return res.status(404).send('openapi.yaml not found');
+  if (!fs.existsSync(yamlPath)) return res.status(404).send('openapi.yaml not found');
   res.setHeader('Content-Type', 'text/yaml; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=300');
-  res.send(readFileSync(yamlPath, 'utf8'));
+  res.send(fs.readFileSync(yamlPath, 'utf8'));
 });
 
-// (already present)
+// Swagger UI (keep AFTER the JSON/YAML routes above)
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, { explorer: true }));
-/* ============================ ROUTES ============================ */
 
-// NOTE: we mount BOTH unversioned (/api) and versioned (/api/v1) aliases.
+// ============================ ROUTES ============================
+
+// Mount helper for both /api and /api/v1
 const mount = (subpath, router) => {
   if (!router) return;
-  // Per-route limiter example
+
+  // Per-route limiter example: /auth/login
   if (subpath === '/auth') {
     app.use(`${API_PREFIX}${subpath}/login`, authLoginLimiter);
     if (API_VERSION) app.use(`${API_BASE}${subpath}/login`, authLoginLimiter);
   }
+
   app.use(`${API_PREFIX}${subpath}`, router);
   if (API_VERSION) app.use(`${API_BASE}${subpath}`, router);
 };
@@ -226,7 +228,7 @@ mount('/pdf', pdfRoutes);
 mount('/insights', insightsRoutes);
 // mount('/analytics', analyticsRoutes);
 
-/* ============================ 404 + ERROR ============================ */
+// ============================ 404 + ERROR ============================
 
 app.use((req, res) => {
   res.status(404).json({
@@ -237,29 +239,28 @@ app.use((req, res) => {
 });
 
 // Central error handler
-// (Make sure this is the last middleware)
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
   const code = err.status || err.statusCode || 500;
   const payload = {
     success: false,
     message: err.message || 'Server Error',
-    requestId: _req?.id,
+    requestId: req.id,
   };
   if (!isProd && err.stack) payload.stack = err.stack;
   res.status(code).json(payload);
 });
 
-/* ============================ START ============================ */
+// ============================ START ============================
 
 (async () => {
   try {
-    // connect DB if you have one
     if (typeof connectDB === 'function') {
       await connectDB();
+      console.log('✅ Mongo connected');
     }
     app.listen(PORT, () => {
       if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes('*')) {
-        console.log(`CORS: allowing all origins`);
+        console.log('CORS: allowing all origins');
       } else {
         console.log(`CORS: allowed origins -> ${CORS_ORIGINS.join(', ')}`);
       }
