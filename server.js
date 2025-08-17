@@ -177,6 +177,7 @@ app.get('/readyz', (_req, res) => {
 
 const openapiSpec = loadOpenApiSpec();
 
+
 // Serve raw OpenAPI JSON/YAML for tooling (MUST come before the UI mount)
 app.get('/openapi.json', (_req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
