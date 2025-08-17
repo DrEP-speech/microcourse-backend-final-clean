@@ -1,15 +1,21 @@
-// routes/authRoutes.js
-import express from 'express';
+import { Router } from 'express';
 import { signup, login, me, logout } from '../controllers/authController.js';
-import validate from '../middleware/validate.js';
-import requireAuth from '../middleware/requireAuth.js';
-import { validateSignup, validateLogin } from '../validators/authSchemas.js';
+import { refresh, logoutEverywhere } from '../controllers/authController.js';
+import { requireAuth } from '../middleware/requireAuth.js';
+import { requireCsrf, issueCsrf } from '../middleware/requireCsrf.js';
+import { validate } from '../middleware/validate.js';
+import { signupSchema, loginSchema } from '../validators/authSchemas.js';
 
-const router = express.Router();
+const router = Router();
 
-router.post('/signup', validate(validateSignup), signup);
-router.post('/login',  validate(validateLogin),  login);
-router.get('/me',      requireAuth,             me);
-router.post('/logout', logout);
+router.get('/csrf', issueCsrf); // <-- clients call this first to get the token cookie & value
+
+router.post('/signup', validate(signupSchema), requireCsrf, signup);
+router.post('/login',  validate(loginSchema),  requireCsrf, login);
+router.get('/me',       requireAuth, me);
+
+router.post('/refresh', refresh);                 // NEW
+router.post('/logout',  requireAuth, logout);     // existing
+router.post('/logout-all', requireAuth, logoutEverywhere); // NEW
 
 export default router;

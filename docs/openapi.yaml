@@ -1,12 +1,12 @@
 openapi: 3.0.3
+
 info:
   title: MicroCourse API
   version: 1.0.0
-  description: >
-    API for MicroCourse. Supports cookie-based and Bearer JWT auth.
+  description: API for MicroCourse. Supports cookie-based and Bearer JWT auth.
   license:
     name: MIT
-    url: https://opensource.org/licenses/MIT
+    url: https://opensource.org/license/mit/
 
 servers:
   - url: /api
@@ -18,159 +18,184 @@ tags:
   - name: auth
     description: Authentication endpoints
 
+# Global auth: allow EITHER cookie OR bearer
+security:
+  - cookieAuth: []
+  - bearerAuth: []
+
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: "Send the token as: Authorization: Bearer <token>"
     cookieAuth:
       type: apiKey
       in: cookie
       name: mc_token
-      description: "Auth cookie set by the server after login/signup."
+      description: Auth cookie issued by the server.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer token (access token).
 
   schemas:
     AuthSignupRequest:
       type: object
       required: [name, email, password]
       properties:
-        name:
-          type: string
-          example: Jane Doe
-        email:
-          type: string
-          format: email
-          example: user@example.com
-        password:
-          type: string
-          format: password
-          minLength: 6
-          example: secret123
+        name: { type: string, minLength: 1, example: Jane Doe }
+        email: { type: string, format: email, example: jane@example.com }
+        password: { type: string, minLength: 8, example: secret123 }
+
     AuthLoginRequest:
       type: object
       required: [email, password]
       properties:
-        email:
-          type: string
-          format: email
-          example: user@example.com
-        password:
-          type: string
-          format: password
-          example: secret123
+        email: { type: string, format: email, example: jane@example.com }
+        password: { type: string, minLength: 8, example: secret123 }
+
     PublicUser:
       type: object
       properties:
-        _id:
-          type: string
-          example: 64fb2d1f9a32b3a9c5f0d111
-        email:
-          type: string
-          format: email
-          example: user@example.com
-        name:
-          type: string
-          example: Jane Doe
-        role:
-          type: string
-          example: student
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
+        _id: { type: string, example: "66c8f5c2e2d45b0d5e3d1f90" }
+        email: { type: string, format: email }
+        name: { type: string }
+        role: { type: string, example: user }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
     AuthResponse:
       type: object
+      required: [success, user]
       properties:
-        success:
-          type: boolean
-          example: true
-        user:
-          $ref: '#/components/schemas/PublicUser'
+        success: { type: boolean, example: true }
+        user: { $ref: '#/components/schemas/PublicUser' }
         token:
           type: string
-          description: "Legacy field: mirrors accessToken"
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          nullable: true
+          description: Legacy token field (same as accessToken for backward compatibility).
         accessToken:
           type: string
+          description: Bearer access token (JWT).
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-security:
-  - cookieAuth: []
-  - bearerAuth: []
+    ErrorResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string, example: "Bad request" }
+        requestId: { type: string, example: "a1b2c3…" }
 
 paths:
-  /auth/signup:
-    post:
-      operationId: authSignup
-      summary: Sign up
-      tags: [auth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AuthSignupRequest'
-      responses:
-        '201':
-          description: "Created. Sets mc_token cookie and returns user + tokens."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          description: "Invalid payload or email already in use."
-  /auth/login:
-    post:
-      operationId: authLogin
-      summary: Login
-      tags: [auth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AuthLoginRequest'
-      responses:
-        '200':
-          description: "OK. Sets mc_token cookie and returns user + tokens."
-          headers:
-            Set-Cookie:
-              schema:
-                type: string
-              description: "Includes mc_token with SameSite=None; Secure in prod."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
-          description: "Invalid credentials."
-      x-rateLimit:
-        windowMs: 600000
-        max: 10
-  /auth/me:
+  /auth/csrf:
     get:
-      operationId: authMe
-      summary: Current user
       tags: [auth]
-      security:
-        - cookieAuth: []
-        - bearerAuth: []
+      summary: Get CSRF token
+      operationId: getCsrf
+      description: Issues a CSRF cookie and returns the token to send in the **X-CSRF-Token** header.
+      security: []   # public
       responses:
-        '200':
-          description: "Returns the authenticated user."
+        "200":
+          description: OK
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                    example: true
-                  user:
-                    $ref: '#/components/schemas/PublicUser'
-        '401':
-          description: "Not authenticated."
+                  csrfToken: { type: string }
+                required: [csrfToken]
+              examples:
+                ok:
+                  value: { csrfToken: "abc123" }
+        "400":
+          description: CSRF not enabled or request invalid
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/signup:
+    post:
+      tags: [auth]
+      summary: Sign up
+      operationId: authSignup
+      security: []   # public (overrides global)
+      parameters:
+        - in: header
+          name: X-CSRF-Token
+          description: CSRF token obtained from **GET /auth/csrf**
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthSignupRequest' }
+            examples:
+              body:
+                value: { name: "Jane Doe", email: "jane@example.com", password: "secret123" }
+      responses:
+        "201":
+          description: Created
+          headers:
+            Set-Cookie:
+              description: May set authentication cookies (e.g., **mc_token**).
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        "400": { description: Invalid payload }
+        "409": { description: Email already in use }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Login
+      operationId: authLogin
+      security: []   # public (overrides global)
+      parameters:
+        - in: header
+          name: X-CSRF-Token
+          description: CSRF token obtained from **GET /auth/csrf**
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthLoginRequest' }
+            examples:
+              body:
+                value: { email: "jane@example.com", password: "secret123" }
+      responses:
+        "200":
+          description: OK
+          headers:
+            Set-Cookie:
+              description: May set authentication cookies (e.g., **mc_token**).
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        "400": { description: Invalid credentials / payload }
+        "401": { description: Unauthorized }
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Current user
+      operationId: authMe
+      description: Returns the authenticated user. Accepts either **Bearer** token or **mc_token** cookie.
+      # (optional — global security already applies; keep for clarity)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  user: { $ref: '#/components/schemas/PublicUser' }
+        "401": { description: Not authenticated }
