@@ -1,13 +1,19 @@
 // middleware/validate.js
-export default function validate(validator) {
+export function validate(schema) {
   return (req, res, next) => {
     try {
-      const { value, error } = validator(req.body || {});
-      if (error) return res.status(400).json({ success: false, message: error });
-      req.body = value; // normalized body
+      // Support body, query, params in case you need it later
+      const source = req.body ?? {};
+      schema.parse(source);
       next();
     } catch (err) {
-      next(err);
+      const issues = err?.issues?.map(i => `${i.path.join('.')}: ${i.message}`) ?? [];
+      res.status(400).json({
+        success: false,
+        message: 'Invalid request payload',
+        errors: issues,
+        requestId: req.id,
+      });
     }
   };
 }

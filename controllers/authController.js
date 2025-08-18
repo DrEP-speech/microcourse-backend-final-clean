@@ -1,172 +1,223 @@
-// controllers/authController.js
+// controllers/authController.js (ESM)
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 
 const {
-  NODE_ENV = 'development',
-  JWT_SECRET = 'change-me',
-  JWT_EXPIRES_IN = '15m',
-  REFRESH_TOKEN_SECRET,
-  REFRESH_TOKEN_EXPIRES_IN = '7d',
+  JWT_SECRET = 'dev-secret',
+  JWT_EXPIRES_IN = '7d',
   ACCESS_COOKIE_NAME = 'mc_token',
-  REFRESH_COOKIE_NAME = 'rt',
-  COOKIE_DOMAIN,
+  NODE_ENV = 'development',
 } = process.env;
 
 const isProd = NODE_ENV === 'production';
-const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function toPublicUser(u) {
-  if (!u) return null;
-  const o = u.toObject ? u.toObject() : u;
-  return {
-    _id: o._id,
-    email: o.email,
-    name: o.name ?? o.displayName ?? '',
-    role: o.role ?? 'user',
-    createdAt: o.createdAt,
-    updatedAt: o.updatedAt,
-  };
-}
-
-function signAccessToken(userId) {
-  return jwt.sign({ sub: String(userId) }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
-function signRefreshToken(userId) {
-  const key = REFRESH_TOKEN_SECRET || JWT_SECRET;
-  return jwt.sign({ sub: String(userId), type: 'refresh' }, key, {
-    expiresIn: REFRESH_TOKEN_EXPIRES_IN,
-  });
-}
-
-function setAuthCookies(res, { accessToken, refreshToken }) {
-  const base = {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: 'none',
-    path: '/',
-    ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
-  };
-  res.cookie(ACCESS_COOKIE_NAME, accessToken, base);
-  res.cookie(REFRESH_COOKIE_NAME, refreshToken, base);
-}
-function clearAuthCookies(res) {
-  const base = {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: 'none',
-    path: '/',
-    ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
-  };
-  res.clearCookie(ACCESS_COOKIE_NAME, base);
-  res.clearCookie(REFRESH_COOKIE_NAME, base);
-}
-function getTokenFromReq(req) {
-  const auth = req.headers?.authorization || '';
-  if (auth.toLowerCase().startsWith('bearer ')) return auth.slice(7).trim();
-  return req.cookies?.[ACCESS_COOKIE_NAME];
-}
-
-/* ----------------------------- Controllers ----------------------------- */
-
-export async function signup(req, res) {
+// ---------- (Optional) Redis for global logout ----------
+let redis = null;
+async function getRedisClient() {
+  if (redis !== null) return redis;
   try {
-    const { name = '', email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'email and password required' });
+    // If you created lib/redis.js earlier
+    const mod = await import('../lib/redis.js').catch(() => null);
+    if (mod?.getRedis) {
+      redis = mod.getRedis();
+    } else {
+      redis = null;
     }
-    if (!emailRe.test(email) || String(password).length < 6) {
-      return res.status(400).json({ success: false, message: 'Invalid signup payload' });
-    }
-
-    const existing = await User.findOne({ email }).lean();
-    if (existing) {
-      return res.status(409).json({ success: false, message: 'Email already in use' });
-    }
-
-    const hash = await bcrypt.hash(password, 10);
-    const created = await User.create({ name, email, password: hash });
-
-    const accessToken = signAccessToken(created._id);
-    const refreshToken = signRefreshToken(created._id);
-    setAuthCookies(res, { accessToken, refreshToken });
-
-    return res.status(201).json({
-      success: true,
-      user: toPublicUser(created),
-      token: accessToken, // legacy
-      accessToken,
-    });
-  } catch (err) {
-    console.error('Signup error:', err);
-    return res
-      .status(500)
-      .json({ success: false, message: 'Signup failed', details: String(err?.message || err) });
+  } catch {
+    redis = null;
+  }
+  return redis;
+}
+async function getLogoutAllAfter(userId) {
+  const r = await getRedisClient();
+  if (!r) return 0;
+  try {
+    const v = await r.get(`logout_all_after:${userId}`);
+    return Number(v || 0);
+  } catch {
+    return 0;
+  }
+}
+async function setLogoutAllAfter(userId, epochSeconds) {
+  const r = await getRedisClient();
+  if (!r) return false;
+  try {
+    await r.set(`logout_all_after:${userId}`, String(epochSeconds));
+    return true;
+  } catch {
+    return false;
   }
 }
 
-export async function login(req, res) {
+// ---------- helpers ----------
+function sign(userId) {
+  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+function setAuthCookie(res, token) {
+  res.cookie(ACCESS_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',      // change to 'none' if you truly need cross-site cookies
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+}
+
+function clearAuthCookie(res) {
+  res.clearCookie(ACCESS_COOKIE_NAME, { path: '/' });
+}
+
+function safeUser(u) {
+  if (!u) return null;
+  const src = typeof u.toObject === 'function' ? u.toObject() : u;
+  const { _id, id, name, email, role, createdAt, updatedAt } = src;
+  return { _id: _id || id, name, email, role, createdAt, updatedAt };
+}
+
+function readToken(req) {
+  const header = req.get('authorization') || '';
+  if (header.startsWith('Bearer ')) return header.slice(7);
+  return req.cookies?.[ACCESS_COOKIE_NAME] || null;
+}
+
+// ---------- controllers ----------
+export async function signup(req, res, next) {
+  try {
+    const { name, email, password } = req.body || {};
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Invalid signup payload' });
+    }
+
+    const lower = email.toLowerCase();
+    const existing = await User.findOne({ email: lower });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Email already in use' });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email: lower, password: hash, role: 'student' });
+
+    const token = sign(user._id);
+    setAuthCookie(res, token);
+
+    return res.status(201).json({ success: true, user: safeUser(user) });
+  } catch (err) {
+    if (next) return next(err);
+    return res.status(500).json({ success: false, message: 'Signup failed' });
+  }
+}
+
+export async function login(req, res, next) {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'email and password required' });
+      return res.status(400).json({ success: false, message: 'Invalid login payload' });
     }
 
-    const userDoc = await User.findOne({ email }).select('+password');
-    if (!userDoc) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
 
-    const ok = await bcrypt.compare(password, userDoc.password);
-    if (!ok) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    let ok = false;
+    if (user.password && user.password.startsWith('$2')) {
+      ok = await bcrypt.compare(password, user.password);
+    } else {
+      ok = password === user.password; // legacy/plain support (optional)
+    }
+    if (!ok) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
 
-    const accessToken = signAccessToken(userDoc._id);
-    const refreshToken = signRefreshToken(userDoc._id);
-    setAuthCookies(res, { accessToken, refreshToken });
+    const token = sign(user._id);
+    setAuthCookie(res, token);
 
-    return res.json({
-      success: true,
-      user: toPublicUser(userDoc),
-      token: accessToken, // legacy
-      accessToken,
-    });
+    return res.json({ success: true, user: safeUser(user) });
   } catch (err) {
-    console.error('Login error:', err);
-    return res
-      .status(500)
-      .json({ success: false, message: 'Login failed', details: String(err?.message || err) });
+    if (next) return next(err);
+    return res.status(500).json({ success: false, message: 'Login failed' });
   }
 }
 
 export async function me(req, res) {
   try {
-    if (req.user) return res.json({ success: true, user: toPublicUser(req.user) });
+    const token = readToken(req);
+    if (!token) return res.status(401).json({ user: null });
 
-    const token = getTokenFromReq(req);
-    if (!token) return res.status(401).json({ success: false, user: null });
-
-    let payload;
-    try {
-      payload = jwt.verify(token, JWT_SECRET);
-    } catch {
-      return res.status(401).json({ success: false, user: null });
+    const payload = jwt.verify(token, JWT_SECRET);
+    // Optional global-logout check (Redis)
+    const cutoff = await getLogoutAllAfter(payload.sub);
+    const iat = Number(payload.iat || 0); // JWT iat is seconds
+    if (cutoff && iat < cutoff) {
+      return res.status(401).json({ user: null });
     }
 
     const user = await User.findById(payload.sub);
-    if (!user) return res.status(401).json({ success: false, user: null });
+    if (!user) return res.status(401).json({ user: null });
 
-    return res.json({ success: true, user: toPublicUser(user) });
-  } catch (err) {
-    console.error('Me error:', err);
-    return res.status(500).json({ success: false, message: 'Failed to fetch current user' });
+    return res.json({ user: safeUser(user) });
+  } catch {
+    return res.status(401).json({ user: null });
   }
 }
 
 export async function logout(_req, res) {
+  clearAuthCookie(res);
+  return res.json({ success: true });
+}
+
+/**
+ * POST /auth/refresh
+ * If a valid token (cookie or Bearer) is present and not globally revoked,
+ * issue a fresh token and set cookie again.
+ */
+export async function refresh(req, res) {
   try {
-    clearAuthCookies(res);
-    return res.json({ success: true });
-  } catch (err) {
-    console.error('Logout error:', err);
-    return res.status(500).json({ success: false, message: 'Logout failed' });
+    const old = readToken(req);
+    if (!old) return res.status(401).json({ success: false, message: 'Missing token' });
+
+    const payload = jwt.verify(old, JWT_SECRET);
+    const cutoff = await getLogoutAllAfter(payload.sub);
+    const iat = Number(payload.iat || 0);
+    if (cutoff && iat < cutoff) {
+      return res.status(401).json({ success: false, message: 'Session revoked' });
+    }
+
+    const user = await User.findById(payload.sub);
+    if (!user) return res.status(401).json({ success: false, message: 'Unknown user' });
+
+    const fresh = sign(user._id);
+    setAuthCookie(res, fresh);
+    return res.json({ success: true, user: safeUser(user) });
+  } catch {
+    return res.status(401).json({ success: false, message: 'Invalid token' });
+  }
+}
+
+/**
+ * POST /auth/logout-everywhere
+ * Requires auth. With Redis: sets a per-user cutoff; all tokens issued before are invalid.
+ * Without Redis: clears current cookie and returns a note.
+ */
+export async function logoutEverywhere(req, res) {
+  try {
+    const token = readToken(req);
+    if (!token) return res.status(401).json({ success: false, message: 'Missing token' });
+
+    const payload = jwt.verify(token, JWT_SECRET);
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    const ok = await setLogoutAllAfter(payload.sub, nowSec);
+    clearAuthCookie(res);
+
+    if (ok) {
+      return res.json({ success: true, message: 'All sessions revoked' });
+    }
+    // No Redis available—best effort for current device only
+    return res.json({ success: true, message: 'Logged out on this device. (Global logout requires Redis.)' });
+  } catch {
+    return res.status(401).json({ success: false, message: 'Invalid token' });
   }
 }
