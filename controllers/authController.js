@@ -2,6 +2,117 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
+// controllers/authController.js (additions)
+import jwt from 'jsonwebtoken';
+import {
+  createSession,
+  validateSession,
+  rotateSession,
+  revokeAllUserSessions,
+} from '../services/tokenStore.js';
+
+const ACCESS_TTL = process.env.ACCESS_TTL || '15m';
+const REFRESH_TTL = process.env.REFRESH_TTL || '30d';
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || JWT_SECRET;
+
+const COOKIE_NAME = process.env.COOKIE_NAME || 'mc_token';
+const REFRESH_COOKIE_NAME = process.env.REFRESH_COOKIE_NAME || 'mc_refresh';
+const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true';
+const COOKIE_SAMESITE = process.env.COOKIE_SAMESITE || 'Lax';
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
+
+function parseDurToSec(s) {
+  if (!isNaN(Number(s))) return Number(s);
+  const m = String(s).match(/^(\d+)([smhd])$/i);
+  if (!m) return 3600;
+  const n = Number(m[1]); const u = m[2].toLowerCase();
+  return u === 's' ? n : u === 'm' ? n * 60 : u === 'h' ? n * 3600 : n * 86400;
+}
+const REFRESH_TTL_SEC = parseDurToSec(REFRESH_TTL);
+const ACCESS_TTL_SEC  = parseDurToSec(ACCESS_TTL);
+
+function setTokenCookies(res, { accessToken, refreshToken }) {
+  const base = {
+    httpOnly: true,
+    secure: COOKIE_SECURE,
+    sameSite: COOKIE_SAMESITE,
+    domain: COOKIE_DOMAIN,
+    path: '/',
+  };
+  res.cookie(COOKIE_NAME, accessToken, { ...base, maxAge: ACCESS_TTL_SEC * 1000 });
+  if (refreshToken) {
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, { ...base, maxAge: REFRESH_TTL_SEC * 1000 });
+  }
+}
+
+function clearAuthCookies(res) {
+  const base = { httpOnly: true, secure: COOKIE_SECURE, sameSite: COOKIE_SAMESITE, domain: COOKIE_DOMAIN, path: '/' };
+  res.clearCookie(COOKIE_NAME, base);
+  res.clearCookie(REFRESH_COOKIE_NAME, base);
+}
+
+export async function issueSessionCookiesForUser(res, userId, req) {
+  const jti = await createSession(userId, REFRESH_TTL_SEC, {
+    ua: (req.headers['user-agent'] || '').slice(0, 128),
+    ip: req.ip,
+  });
+
+  const accessToken  = jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: ACCESS_TTL });
+  const refreshToken = jwt.sign({ sub: userId, jti }, JWT_REFRESH_SECRET, { expiresIn: REFRESH_TTL });
+
+  setTokenCookies(res, { accessToken, refreshToken });
+  return { accessToken, refreshToken };
+}
+
+// POST /auth/refresh (CSRF-protected)
+export async function refresh(req, res) {
+  try {
+    const token = req.cookies?.[REFRESH_COOKIE_NAME];
+    if (!token) return res.status(401).json({ success: false, message: 'No refresh token' });
+
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_REFRESH_SECRET); // { sub, jti }
+    } catch {
+      return res.status(401).json({ success: false, message: 'Invalid or expired refresh token' });
+    }
+
+    const sess = await validateSession(payload.jti);
+    if (!sess || sess.userId !== payload.sub) {
+      return res.status(401).json({ success: false, message: 'Refresh session not found' });
+    }
+
+    const newJti = await rotateSession(
+      payload.jti,
+      payload.sub,
+      REFRESH_TTL_SEC,
+      { ua: (req.headers['user-agent'] || '').slice(0, 128), ip: req.ip }
+    );
+
+    const accessToken = jwt.sign({ sub: payload.sub }, JWT_SECRET, { expiresIn: ACCESS_TTL });
+    const newRefresh  = jwt.sign({ sub: payload.sub, jti: newJti }, JWT_REFRESH_SECRET, { expiresIn: REFRESH_TTL });
+
+    setTokenCookies(res, { accessToken, refreshToken: newRefresh });
+    return res.json({ success: true, accessToken });
+  } catch {
+    return res.status(500).json({ success: false, message: 'Refresh failed' });
+  }
+}
+
+// POST /auth/logout-everywhere (auth + CSRF)
+export async function logoutEverywhere(req, res) {
+  try {
+    const userId = (req.user?.id || req.user?._id || '').toString();
+    if (!userId) return res.status(401).json({ success: false, message: 'Not authenticated' });
+
+    await revokeAllUserSessions(userId);
+    clearAuthCookies(res);
+    return res.json({ success: true });
+  } catch {
+    return res.status(500).json({ success: false, message: 'Logout failed' });
+  }
+}
 
 const {
   JWT_SECRET = 'dev-secret',
@@ -221,3 +332,136 @@ export async function logoutEverywhere(req, res) {
     return res.status(401).json({ success: false, message: 'Invalid token' });
   }
 }
+export const logout = (req, res) => {
+  const name = process.env.COOKIE_NAME || 'mc_token';
+  res.clearCookie(name, {
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === 'true',
+    sameSite: (process.env.COOKIE_SAMESITE || 'Lax')
+  });
+  return res.json({ success: true });
+};
+// controllers/authController.js (add near top)
+import jwt from 'jsonwebtoken';
+import {
+  createSession,
+  validateSession,
+  rotateSession,
+  revokeAllUserSessions,
+} from '../services/tokenStore.js';
+
+const ACCESS_TTL = process.env.ACCESS_TTL || '15m';            // e.g. 15m
+const REFRESH_TTL = process.env.REFRESH_TTL || '30d';          // e.g. 30d
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || JWT_SECRET;
+
+const COOKIE_NAME = process.env.COOKIE_NAME || 'mc_token';
+const REFRESH_COOKIE_NAME = process.env.REFRESH_COOKIE_NAME || 'mc_refresh';
+const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true';
+const COOKIE_SAMESITE = process.env.COOKIE_SAMESITE || 'Lax';
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
+
+function parseDurToSec(s) {
+  // supports "15m", "30d", "12h", "3600" (seconds)
+  if (!isNaN(Number(s))) return Number(s);
+  const m = String(s).match(/^(\d+)([smhd])$/i);
+  if (!m) return 3600;
+  const n = Number(m[1]); const u = m[2].toLowerCase();
+  return u === 's' ? n : u === 'm' ? n * 60 : u === 'h' ? n * 3600 : n * 86400;
+}
+const REFRESH_TTL_SEC = parseDurToSec(REFRESH_TTL);
+const ACCESS_TTL_SEC  = parseDurToSec(ACCESS_TTL);
+
+function setTokenCookies(res, { accessToken, refreshToken }) {
+  const base = {
+    httpOnly: true,
+    secure: COOKIE_SECURE,
+    sameSite: COOKIE_SAMESITE,
+    domain: COOKIE_DOMAIN,
+    path: '/',
+  };
+  res.cookie(COOKIE_NAME, accessToken, { ...base, maxAge: ACCESS_TTL_SEC * 1000 });
+  if (refreshToken) {
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, { ...base, maxAge: REFRESH_TTL_SEC * 1000 });
+  }
+}
+
+function clearAuthCookies(res) {
+  const base = { httpOnly: true, secure: COOKIE_SECURE, sameSite: COOKIE_SAMESITE, domain: COOKIE_DOMAIN, path: '/' };
+  res.clearCookie(COOKIE_NAME, base);
+  res.clearCookie(REFRESH_COOKIE_NAME, base);
+}
+
+// ========= NEW HANDLERS ==========
+
+/** POST /auth/refresh
+ * Rotates refresh token (cookie) and returns a fresh access token (also cookie).
+ * Protect this route with CSRF (since it’s cookie-based).
+ */
+export async function refresh(req, res) {
+  try {
+    const token = req.cookies?.[REFRESH_COOKIE_NAME];
+    if (!token) return res.status(401).json({ success: false, message: 'No refresh token' });
+
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_REFRESH_SECRET); // { sub, jti }
+    } catch {
+      return res.status(401).json({ success: false, message: 'Invalid or expired refresh token' });
+    }
+
+    const sess = await validateSession(payload.jti);
+    if (!sess || sess.userId !== payload.sub) {
+      return res.status(401).json({ success: false, message: 'Refresh session not found' });
+    }
+
+    // rotate
+    const newJti = await rotateSession(
+      payload.jti,
+      payload.sub,
+      REFRESH_TTL_SEC,
+      { ua: (req.headers['user-agent'] || '').slice(0, 128), ip: req.ip }
+    );
+
+    const accessToken = jwt.sign({ sub: payload.sub }, JWT_SECRET, { expiresIn: ACCESS_TTL });
+    const newRefresh  = jwt.sign({ sub: payload.sub, jti: newJti }, JWT_REFRESH_SECRET, { expiresIn: REFRESH_TTL });
+
+    setTokenCookies(res, { accessToken, refreshToken: newRefresh });
+    return res.json({ success: true, accessToken }); // token also set in cookie
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Refresh failed' });
+  }
+}
+
+/** POST /auth/logout-everywhere
+ * Requires normal auth (req.user from requireAuth).
+ * Revokes all refresh sessions for the user and clears cookies.
+ */
+export async function logoutEverywhere(req, res) {
+  try {
+    const userId = (req.user?.id || req.user?._id || '').toString();
+    if (!userId) return res.status(401).json({ success: false, message: 'Not authenticated' });
+
+    await revokeAllUserSessions(userId);
+    clearAuthCookies(res);
+    return res.json({ success: true });
+  } catch {
+    return res.status(500).json({ success: false, message: 'Logout failed' });
+  }
+}
+
+// ========= OPTIONAL helpers you can reuse in signup/login =========
+
+export async function issueSessionCookiesForUser(res, userId, req) {
+  const jti = await createSession(userId, REFRESH_TTL_SEC, {
+    ua: (req.headers['user-agent'] || '').slice(0, 128),
+    ip: req.ip,
+  });
+
+  const accessToken  = jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: ACCESS_TTL });
+  const refreshToken = jwt.sign({ sub: userId, jti }, JWT_REFRESH_SECRET, { expiresIn: REFRESH_TTL });
+
+  setTokenCookies(res, { accessToken, refreshToken });
+  return { accessToken, refreshToken };
+}
+

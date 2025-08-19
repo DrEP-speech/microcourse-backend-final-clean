@@ -3,7 +3,8 @@ openapi: 3.0.3
 info:
   title: MicroCourse API
   version: 1.0.0
-  description: API for MicroCourse. Supports cookie-based and Bearer JWT auth.
+  description: >
+    API for MicroCourse LMS. Cookie- or Bearer-based auth + CSRF for unsafe requests.
   license:
     name: MIT
     url: https://opensource.org/license/mit/
@@ -18,23 +19,26 @@ tags:
   - name: auth
     description: Authentication endpoints
 
-# Global auth: allow EITHER cookie OR bearer
 security:
   - cookieAuth: []
   - bearerAuth: []
 
 components:
   securitySchemes:
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: mc_token
-      description: Auth cookie issued by the server.
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Bearer token (access token).
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: mc_token
+      description: Access JWT stored as cookie.
+    refreshCookieAuth:
+      type: apiKey
+      in: cookie
+      name: mc_refresh
+      description: Refresh JWT stored as cookie.
 
   schemas:
     AuthSignupRequest:
@@ -44,24 +48,21 @@ components:
         name: { type: string, minLength: 1, example: Jane Doe }
         email: { type: string, format: email, example: jane@example.com }
         password: { type: string, minLength: 8, example: secret123 }
-
     AuthLoginRequest:
       type: object
       required: [email, password]
       properties:
         email: { type: string, format: email, example: jane@example.com }
         password: { type: string, minLength: 8, example: secret123 }
-
     PublicUser:
       type: object
       properties:
-        _id: { type: string, example: "66c8f5c2e2d45b0d5e3d1f90" }
+        _id: { type: string }
         email: { type: string, format: email }
         name: { type: string }
-        role: { type: string, example: user }
+        role: { type: string, example: student }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
-
     AuthResponse:
       type: object
       required: [success, user]
@@ -71,28 +72,26 @@ components:
         token:
           type: string
           nullable: true
-          description: Legacy token field (same as accessToken for backward compatibility).
+          description: Legacy alias of accessToken (if provided).
         accessToken:
           type: string
-          description: Bearer access token (JWT).
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
+          description: JWT access token (may also be set as cookie).
     ErrorResponse:
       type: object
       required: [success, message]
       properties:
         success: { type: boolean, example: false }
         message: { type: string, example: "Bad request" }
-        requestId: { type: string, example: "a1b2c3…" }
+        requestId: { type: string, example: "a1b2c3..." }
 
 paths:
+
   /auth/csrf:
     get:
       tags: [auth]
-      summary: Get CSRF token
+      summary: Get CSRF token + cookie
       operationId: getCsrf
-      description: Issues a CSRF cookie and returns the token to send in the **X-CSRF-Token** header.
-      security: []   # public
+      security: []    # public
       responses:
         "200":
           description: OK
@@ -102,92 +101,103 @@ paths:
                 type: object
                 properties:
                   csrfToken: { type: string }
-                required: [csrfToken]
-              examples:
-                ok:
-                  value: { csrfToken: "abc123" }
-        "400":
-          description: CSRF not enabled or request invalid
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /auth/signup:
     post:
       tags: [auth]
       summary: Sign up
       operationId: authSignup
-      security: []   # public (overrides global)
-      parameters:
-        - in: header
-          name: X-CSRF-Token
-          description: CSRF token obtained from **GET /auth/csrf**
-          required: true
-          schema: { type: string }
+      security: []    # public (but CSRF-protected)
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/AuthSignupRequest' }
-            examples:
-              body:
-                value: { name: "Jane Doe", email: "jane@example.com", password: "secret123" }
       responses:
         "201":
-          description: Created
+          description: Created (cookies may be set)
           headers:
             Set-Cookie:
-              description: May set authentication cookies (e.g., **mc_token**).
               schema: { type: string }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AuthResponse' }
-        "400": { description: Invalid payload }
-        "409": { description: Email already in use }
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        "409":
+          description: Email already in use
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /auth/login:
     post:
       tags: [auth]
       summary: Login
       operationId: authLogin
-      security: []   # public (overrides global)
-      parameters:
-        - in: header
-          name: X-CSRF-Token
-          description: CSRF token obtained from **GET /auth/csrf**
-          required: true
-          schema: { type: string }
+      security: []    # public (but CSRF-protected)
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/AuthLoginRequest' }
-            examples:
-              body:
-                value: { email: "jane@example.com", password: "secret123" }
+      responses:
+        "200":
+          description: OK (cookies may be set)
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        "400":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Rotate refresh and issue new access token
+      operationId: authRefresh
+      description: >
+        Requires a valid CSRF header and the **mc_refresh** cookie.
+        Responds with a fresh access token and sets both cookies again.
+      security:
+        - refreshCookieAuth: []
       responses:
         "200":
           description: OK
           headers:
             Set-Cookie:
-              description: May set authentication cookies (e.g., **mc_token**).
               schema: { type: string }
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/AuthResponse' }
-        "400": { description: Invalid credentials / payload }
-        "401": { description: Unauthorized }
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  accessToken: { type: string }
+        "401":
+          description: Invalid or missing refresh token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
-  /auth/me:
-    get:
+  /auth/logout-everywhere:
+    post:
       tags: [auth]
-      summary: Current user
-      operationId: authMe
-      description: Returns the authenticated user. Accepts either **Bearer** token or **mc_token** cookie.
-      # (optional — global security already applies; keep for clarity)
+      summary: Revoke all sessions and clear cookies
+      operationId: authLogoutEverywhere
+      description: >
+        Requires auth (cookie/bearer) and CSRF header. Revokes **all** refresh sessions for the user.
       security:
-        - bearerAuth: []
         - cookieAuth: []
+        - bearerAuth: []
       responses:
         "200":
           description: OK
@@ -197,5 +207,30 @@ paths:
                 type: object
                 properties:
                   success: { type: boolean, example: true }
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Current user
+      operationId: authMe
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, user]
+                properties:
+                  success: { type: boolean, example: true }
                   user: { $ref: '#/components/schemas/PublicUser' }
-        "401": { description: Not authenticated }
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }

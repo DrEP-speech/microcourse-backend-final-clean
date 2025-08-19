@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "lint": "eslint ."
+    "lint:openapi": "redocly lint docs/openapi.yaml",
+    "check": "node -e \"JSON.parse(require('fs').readFileSync('package.json','utf8'))\" && npm run lint:openapi"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -37,6 +38,7 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
+    "@redocly/cli": "^2.0.6",
     "eslint": "^8.57.0",
     "nodemon": "^3.1.4"
   },
