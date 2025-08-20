@@ -279,6 +279,8 @@ paths:
                 $ref: '#/components/schemas/SignupResponse'
         "400":
           $ref: '#/components/responses/BadRequest'
+        "403":
+          $ref: '#/components/responses/Forbidden'
         "409":
           $ref: '#/components/responses/Conflict'
         "429":
@@ -314,6 +316,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         "401":
           $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
         "429":
           $ref: '#/components/responses/TooManyRequests'
 
@@ -356,7 +360,8 @@ paths:
                 $ref: '#/components/schemas/RefreshResponse'
         "401":
           $ref: '#/components/responses/Unauthorized'
-
+        "403":
+          $ref: '#/components/responses/Forbidden'
   /auth/logout-everywhere:
     post:
       tags: [auth]
@@ -375,3 +380,5 @@ paths:
                 type: string
         "401":
           $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
