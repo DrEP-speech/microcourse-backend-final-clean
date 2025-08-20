@@ -167,27 +167,27 @@ components:
 
 paths:
   /healthz:
-    get:
-      tags: [system]
-      summary: Liveness probe
-      operationId: systemHealthz
-      security: []
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-        "503":
-          description: Service not ready
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+  get:
+    tags: [system]
+    summary: Liveness probe
+    operationId: systemHealthz
+    security: []
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ok:
+                  type: boolean
+      "503":
+        description: Service not ready
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErrorResponse'
 
   /auth/csrf:
     get:
