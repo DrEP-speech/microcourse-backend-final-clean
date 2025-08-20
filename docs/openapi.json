@@ -22,6 +22,32 @@
             }
           }
         },
+/auth/refresh:
+  post:
+    tags: [auth]
+    summary: Rotate refresh token and issue new access token
+    operationId: authRefresh
+    description: Requires CSRF header and mc_refresh cookie.
+    security:
+      - refreshCookieAuth: []
+    responses:
+      "200":
+        description: OK
+      "401":
+        description: Invalid or missing refresh token
+
+/auth/logout-everywhere:
+  post:
+    tags: [auth]
+    summary: Revoke all user sessions and clear cookies
+    operationId: authLogoutEverywhere
+    security:
+      - cookieAuth: []
+      - bearerAuth: []
+    responses:
+      "200": { description: OK }
+      "401": { description: Not authenticated }
+
         "responses": { "201": { "description": "Created" }, "400": { "description": "Bad Request" } }
       }
     },

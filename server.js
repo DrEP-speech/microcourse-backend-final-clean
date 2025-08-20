@@ -1,213 +1,262 @@
-﻿import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import helmet from "helmet";
-import compression from "compression";
-import morgan from "morgan";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { parse as parseYAML } from "yaml";
-import swaggerUi from "swagger-ui-express";
-import { RateLimiterRedis, RateLimiterMemory } from "rate-limiter-flexible";
+// server.js (ESM)
 
-// Optional DB connect (if you have it)
-let connectDB = null;
-try {
-  const mod = await import("./config/db.js");
-  connectDB = mod?.default || null;
-} catch (_) {}
+import 'dotenv/config';
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+import YAML from 'yaml';
+import pino from 'pino';
+import pinoHttp from 'pino-http';
+import mongoose from 'mongoose';
+import { randomUUID } from 'node:crypto';
+import client from 'prom-client';
 
-// Routes (ensure these exist)
-import authRoutes from "./routes/authRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import notificationRoutes from "./routes/notificationRoutes.js";
-// add other route groups as they exist:
-// import badgeRoutes from "./routes/badgeRoutes.js"; etc.
+// Rate limiting
+import { RateLimiterRedis, RateLimiterMemory } from 'rate-limiter-flexible';
+import IORedis from 'ioredis';
 
-/* ============================ CONFIG ============================ */
+// Routes
+import authRoutes from './routes/authRoutes.js'; // exposes /csrf, /signup, /login, /me, etc.
 
-const NODE_ENV = process.env.NODE_ENV || "development";
-const isProd = NODE_ENV === "production";
+// ────────────────────────────────────────────────────────────────────────────────
+// Setup
+// ────────────────────────────────────────────────────────────────────────────────
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const isProd = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT || 5000);
 
-const API_PREFIX = process.env.API_PREFIX || "/api";
-const API_VERSION = process.env.API_VERSION || ""; // e.g. "v1"
-const API_BASE = API_VERSION ? `${API_PREFIX}/${API_VERSION}` : API_PREFIX;
+const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  transport: isProd ? undefined : { target: 'pino-pretty', options: { colorize: true } }
+});
+const log = logger; // alias
 
-// CORS allow-list (comma separated). Supports wildcards via simple regex.
-const CORS_ORIGINS = (process.env.CORS_ORIGINS || "")
-  .split(",")
+const app = express();
+app.set('trust proxy', 1); // needed for secure cookies behind proxies (Render/Cloudflare)
+
+// ────────────────────────────────────────────────────────────────────────────────
+/** Mongo connect */
+const MONGO_URL = process.env.MONGO_URL || process.env.MONGODB_URI;
+if (!MONGO_URL) {
+  log.warn('MONGO_URL not set – remember to configure your database!');
+}
+mongoose
+  .connect(MONGO_URL, { autoIndex: !isProd })
+  .then(() => log.info('✅ Mongo connected'))
+  .catch((err) => {
+    log.error({ err }, 'Mongo connection error');
+    process.exit(1);
+  });
+
+// ────────────────────────────────────────────────────────────────────────────────
+/** Redis client (optional) */
+let redis;
+let rateLimiter;
+try {
+  if (process.env.REDIS_URL) {
+    redis = new IORedis(process.env.REDIS_URL, {
+      lazyConnect: true,
+      maxRetriesPerRequest: 3,
+      enableAutoPipelining: true
+    });
+    await redis.connect();
+    log.info('🔌 Redis connected');
+
+    rateLimiter = new RateLimiterRedis({
+      storeClient: redis,
+      keyPrefix: 'rl',
+      points: 20,          // requests
+      duration: 60,        // per 60s
+      execEvenly: true
+    });
+  } else {
+    log.warn('REDIS_URL not set – using in-memory rate limiter');
+    rateLimiter = new RateLimiterMemory({
+      keyPrefix: 'rl',
+      points: 20,
+      duration: 60
+    });
+  }
+} catch (err) {
+  log.error({ err }, 'Redis init failed – falling back to in-memory limiter');
+  rateLimiter = new RateLimiterMemory({ keyPrefix: 'rl', points: 20, duration: 60 });
+}
+
+/** Rate-limit middleware (per IP) */
+const rateLimit = (points = 10, duration = 60) => {
+  return async (req, res, next) => {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+    try {
+      // create a per-route limiter instance with same store
+      const perRoute = rateLimiter?.storeClient
+        ? new RateLimiterRedis({
+            storeClient: rateLimiter.storeClient,
+            keyPrefix: `rl:${req.path}`,
+            points,
+            duration
+          })
+        : new RateLimiterMemory({ keyPrefix: `rl:${req.path}`, points, duration });
+
+      await perRoute.consume(ip);
+      next();
+    } catch (rej) {
+      const retrySecs = Math.ceil((rej.msBeforeNext || 1000) / 1000);
+      res.setHeader('Retry-After', String(retrySecs));
+      return res.status(429).json({ success: false, message: 'Too many requests' });
+    }
+  };
+};
+
+// ────────────────────────────────────────────────────────────────────────────────
+/** CORS – allow same-origin and ALLOWED_ORIGINS (comma-separated list) */
+const allowed = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
-// ---- Helpers for wildcard origins ----
-function toOriginRegex(pattern) {
-  let p = pattern
-    .replace(/^https?:\/\//i, "") // strip scheme if present
-    .replace(/\./g, "\\.")         // escape dots
-    .replace(/\*/g, ".*");         // wildcard
-  return new RegExp(`^https?:\\/\\/${p}$`, "i");
-}
-function matchOrigin(origin, pattern) {
-  return toOriginRegex(pattern).test(origin);
-}
+const toRegex = (pattern) => {
+  if (pattern.startsWith('/') && pattern.endsWith('/')) return new RegExp(pattern.slice(1, -1));
+  // escape string for exact match
+  return new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$');
+};
+const allowRegexes = allowed.map(toRegex);
 
-// CORS options
-const corsOptions = {
-  origin(origin, cb) {
-    if (!origin) return cb(null, true); // server-to-server / curl
-    if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes("*")) {
-      return cb(null, true);
-    }
-    const allowed = CORS_ORIGINS.some((pat) => matchOrigin(origin, pat));
-    return cb(allowed ? null : new Error(`CORS blocked for: ${origin}`), allowed);
-  },
-  credentials: true,
-  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Request-Id", "X-CSRF-Token"],
-  optionsSuccessStatus: 204,
-  maxAge: 86400,
+const isSameOrigin = (origin, reqHost) => {
+  if (!origin) return true; // non-CORS or same-origin XHR without Origin header
+  try {
+    return new URL(origin).host === reqHost;
+  } catch {
+    return false;
+  }
 };
 
-// Swagger loader
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-function loadOpenApiSpec() {
-  const yamlPath = path.join(__dirname, "docs", "openapi.yaml");
-  if (fs.existsSync(yamlPath)) {
-    const raw = fs.readFileSync(yamlPath, "utf8");
-    return parseYAML(raw);
-  }
-  // Minimal fallback so /docs and /openapi.json always work
-  return {
-    openapi: "3.0.3",
-    info: { title: "MicroCourse API", version: "1.0.0" },
-    servers: [{ url: API_PREFIX }, API_VERSION ? { url: API_BASE } : null].filter(Boolean),
-    paths: {
-      "/auth/signup": { post: { summary: "Sign up", responses: { "201": { description: "Created" } } } },
-      "/auth/login":  { post: { summary: "Login",  responses: { "200": { description: "OK" } } } },
-      "/auth/me":     { get:  { summary: "Me",     responses: { "200": { description: "OK" } } } },
-    },
+app.use(
+  cors((req, cb) => {
+    const origin = req.header('Origin');
+    const reqHost = req.headers.host;
+    const ok =
+      isSameOrigin(origin, reqHost) ||
+      (origin && allowRegexes.some((re) => re.test(origin)));
+
+    cb(ok ? null : new Error(`CORS blocked for: ${origin}`), {
+      origin: ok,
+      credentials: true
+    });
+  })
+);
+
+// ────────────────────────────────────────────────────────────────────────────────
+/** Security / parsers / logging */
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: { policy: 'same-origin' },
+    crossOriginResourcePolicy: { policy: 'cross-origin' } // allow Swagger assets
+  })
+);
+app.use(compression());
+app.use(cookieParser());
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false }));
+
+app.use(
+  pinoHttp({
+    logger,
+    customProps: (req) => ({ requestId: req.id })
+  })
+);
+
+// attach a requestId for error responses
+app.use((req, _res, next) => {
+  req.requestId = req.requestId || randomUUID();
+  next();
+});
+
+// ────────────────────────────────────────────────────────────────────────────────
+/** OpenAPI: /openapi.json and /docs */
+const openapiPath = path.join(__dirname, 'docs', 'openapi.yaml');
+let openapiJson = {};
+try {
+  const raw = fs.readFileSync(openapiPath, 'utf8');
+  openapiJson = YAML.parse(raw);
+} catch (err) {
+  log.warn({ err }, 'OpenAPI YAML not found or invalid; /openapi.json will return minimal doc');
+  openapiJson = {
+    openapi: '3.0.3',
+    info: { title: 'MicroCourse API', version: '1.0.0' },
+    servers: [{ url: '/api', description: 'Base API' }],
+    paths: {}
   };
 }
 
-/* ============================ APP BOOTSTRAP ============================ */
+app.get('/openapi.json', (_req, res) => res.json(openapiJson));
 
-const app = express();
-app.set("trust proxy", 1);
+// Swagger UI
+import swaggerUi from 'swagger-ui-express';
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiJson, { explorer: false }));
 
-// Basic middleware
-app.use(morgan(isProd ? "combined" : "dev"));
-app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: "cross-origin" } }));
-app.use(compression());
-app.use(express.json({ limit: process.env.JSON_LIMIT || "1mb" }));
-app.use(express.urlencoded({ extended: true, limit: process.env.FORM_LIMIT || "1mb" }));
-app.use(cookieParser());
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
-/* ============================ RATE LIMITS ============================ */
-
-// Build a limiter that prefers Redis, falls back to memory
-async function makeLimiter({ keyPrefix, points, duration }) {
-  try {
-    // Try to use shared Redis client if you created config/redis.js
-    const redisMod = await import("./config/redis.js").catch(() => null);
-    const redis = redisMod?.redis || null;
-    if (redis) {
-      return new RateLimiterRedis({ storeClient: redis, keyPrefix, points, duration });
-    }
-  } catch (_) {}
-  return new RateLimiterMemory({ keyPrefix, points, duration });
-}
-
-const globalLimiterPromise = makeLimiter({
-  keyPrefix: "rl:global",
-  points: Number(process.env.RL_MAX || (isProd ? 100 : 1000)),
-  duration: Number(process.env.RL_WINDOW_SEC || 900), // seconds
+// ────────────────────────────────────────────────────────────────────────────────
+/** Prometheus metrics at /metrics */
+client.collectDefaultMetrics();
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
-const loginLimiterPromise = makeLimiter({
-  keyPrefix: "rl:login",
-  points: Number(process.env.RL_LOGIN_MAX || (isProd ? 10 : 100)),
-  duration: Number(process.env.RL_LOGIN_WINDOW_SEC || 600),
-});
+// ────────────────────────────────────────────────────────────────────────────────
+/** Healthcheck */
+app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
-const limiterMw = (limiterPromise) => async (req, res, next) => {
-  try {
-    const limiter = await limiterPromise;
-    await limiter.consume(req.ip);
-    next();
-  } catch {
-    res.status(429).json({ success: false, message: "Too many requests. Please try again later." });
-  }
-};
+// ────────────────────────────────────────────────────────────────────────────────
+/** API Routes (versionless base: /api) */
+const api = express.Router();
 
-// Apply global limiter to API bases
-app.use(API_PREFIX, limiterMw(globalLimiterPromise));
-if (API_VERSION) app.use(API_BASE, limiterMw(globalLimiterPromise));
+Update OpenAPI too (short entry):
 
-/* ============================ HEALTH ============================ */
+api.use('/auth/csrf',  rateLimit(20, 60));
+api.use('/auth/signup', rateLimit(5, 60));
+api.use('/auth/refresh', rateLimit(10, 60));
+api.use('/auth/login',  rateLimit(8, 60));
+// Keep your existing rateLimit util
+api.use('/auth/refresh',          rateLimit(10, 60));
+api.use('/auth/logout-everywhere', rateLimit(5, 60));
 
-app.get("/", (_req, res) => res.json({ ok: true, name: "microcourse-backend", env: NODE_ENV }));
-app.get("/healthz", (_req, res) => res.json({ ok: true }));
-app.get("/readyz", (_req, res) => res.json({ ok: true }));
-
-/* ============================ DOCS ============================ */
-
-const openapiSpec = loadOpenApiSpec();
-app.get("/openapi.json", (_req, res) => res.json(openapiSpec)); // raw spec
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapiSpec, { explorer: true }));
-
-/* ============================ ROUTES ============================ */
-
-function mount(subpath, router, opts = {}) {
-  if (!router) return;
-  if (opts.loginLimiter) {
-    app.use(`${API_PREFIX}${subpath}/login`, limiterMw(loginLimiterPromise));
-    if (API_VERSION) app.use(`${API_BASE}${subpath}/login`, limiterMw(loginLimiterPromise));
-  }
-  app.use(`${API_PREFIX}${subpath}`, router);
-  if (API_VERSION) app.use(`${API_BASE}${subpath}`, router);
-}
-
-mount("/auth", authRoutes, { loginLimiter: true });
-mount("/users", userRoutes);
-mount("/notifications", notificationRoutes);
-// mount("/badges", badgeRoutes); etc.
-
-/* ============================ 404 + ERROR ============================ */
-
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.originalUrl}` });
+// ────────────────────────────────────────────────────────────────────────────────
+/** 404 + error handling */
+app.use((req, res, next) => {
+  if (res.headersSent) return next();
+  return res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+    requestId: req.requestId
+  });
 });
 
 app.use((err, _req, res, _next) => {
-  const code = err.status || err.statusCode || 500;
-  const payload = { success: false, message: err.message || "Server Error" };
-  if (!isProd && err.stack) payload.stack = err.stack;
-  res.status(code).json(payload);
+  const status = err.status || err.statusCode || 500;
+  const message = isProd ? (status === 500 ? 'Internal Server Error' : err.message) : err.message || String(err);
+  if (status >= 500) log.error({ err }, 'Unhandled error');
+  res.status(status).json({ success: false, message });
 });
 
-/* ============================ START ============================ */
+// ────────────────────────────────────────────────────────────────────────────────
+/** Start */
+const server = app.listen(PORT, () => {
+  const allowListShown = allowed.length ? allowed.join(', ') : '(none)';
+  log.info(`✅ Server listening on :${PORT} (${isProd ? 'production' : 'development'})`);
+  log.info(`CORS: allowed origins -> ${allowListShown}`);
+});
 
-(async () => {
-  try {
-    if (typeof connectDB === "function") {
-      await connectDB();
-    }
-    app.listen(PORT, () => {
-      if (CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes("*")) {
-        console.log("CORS: allowing all origins");
-      } else {
-        console.log(`CORS: allowed origins -> ${CORS_ORIGINS.join(", ")}`);
-      }
-      console.log(`✅ Server listening on :${PORT} (${NODE_ENV})`);
-    });
-  } catch (e) {
-    console.error("❌ Failed to start server:", e);
-    process.exit(1);
+// Handle EADDRINUSE restarts more safely (optional)
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    log.error('Port in use. Set PORT to a free port or stop the other process.');
   }
-})();
+  process.exit(1);
+});

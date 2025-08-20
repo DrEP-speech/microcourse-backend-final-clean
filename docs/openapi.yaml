@@ -24,21 +24,99 @@ security:
   - bearerAuth: []
 
 components:
+ components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
     cookieAuth:
       type: apiKey
       in: cookie
       name: mc_token
-      description: Access JWT stored as cookie.
     refreshCookieAuth:
       type: apiKey
       in: cookie
       name: mc_refresh
-      description: Refresh JWT stored as cookie.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthUser:
+      type: object
+      properties:
+        _id:       { type: string }
+        email:     { type: string, format: email }
+        name:      { type: string }
+        role:      { type: string, example: student }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              message: { type: string }
+
+    SignupRequest:
+      type: object
+      additionalProperties: false
+      required: [name, email, password]
+      properties:
+        name:         { type: string, minLength: 1, maxLength: 100 }
+        email:        { type: string, format: email }
+        password:     { type: string, minLength: 8, maxLength: 72 }
+        inviteCode:   { type: string }
+        captchaToken: { type: string }
+        rememberMe:   { type: boolean }
+        locale:       { type: string }
+        timezone:     { type: string }
+        termsAccepted:{ type: boolean }
+      example:
+        name: Tester
+        email: tester@example.com
+        password: secret123
+        rememberMe: true
+
+    SignupResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [password]
+      properties:
+        email:        { type: string, format: email }
+        identifier:   { type: string, description: 'Optional username or email' }
+        password:     { type: string, minLength: 8, maxLength: 72 }
+        rememberMe:   { type: boolean }
+        captchaToken: { type: string }
+      examples:
+        byEmail:
+          value:
+            email: tester@example.com
+            password: secret123
+        byIdentifier:
+          value:
+            identifier: tester
+            password: secret123
+
+    LoginResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
 
   schemas:
     AuthSignupRequest:
@@ -85,22 +163,72 @@ components:
         requestId: { type: string, example: "a1b2c3..." }
 
 paths:
-
-  /auth/csrf:
-    get:
+  /auth/signup:
+    post:
       tags: [auth]
-      summary: Get CSRF token + cookie
-      operationId: getCsrf
-      security: []    # public
+      summary: Sign up
+      operationId: authSignup
+      security: []   # public, but CSRF header required
+      parameters:
+        - in: header
+          name: X-CSRF-Token
+          required: true
+          schema: { type: string }
+          description: CSRF token obtained from GET /auth/csrf
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignupRequest' }
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created (cookies set: mc_token, mc_refresh)
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+              description: mc_token & mc_refresh are httpOnly cookies
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  csrfToken: { type: string }
+              schema: { $ref: '#/components/schemas/SignupResponse' }
+        "4XX":
+          description: Validation or conflict
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Login
+      operationId: authLogin
+      security: []   # public, but CSRF header required
+      parameters:
+        - in: header
+          name: X-CSRF-Token
+          required: true
+          schema: { type: string }
+          description: CSRF token obtained from GET /auth/csrf
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        "200":
+          description: OK (cookies set: mc_token, mc_refresh)
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+              description: mc_token & mc_refresh are httpOnly cookies
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        "4XX":
+          description: Invalid credentials or validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
 
   /auth/signup:
     post:

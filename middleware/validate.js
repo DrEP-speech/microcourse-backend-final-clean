@@ -1,19 +1,24 @@
 // middleware/validate.js
-export function validate(schema) {
-  return (req, res, next) => {
+import { ZodError } from 'zod';
+
+export default function validate(schema) {
+  return async (req, res, next) => {
     try {
-      // Support body, query, params in case you need it later
-      const source = req.body ?? {};
-      schema.parse(source);
+      const parsed = await schema.parseAsync(req.body ?? {});
+      req.body = parsed; // use sanitized body
       next();
     } catch (err) {
-      const issues = err?.issues?.map(i => `${i.path.join('.')}: ${i.message}`) ?? [];
-      res.status(400).json({
-        success: false,
-        message: 'Invalid request payload',
-        errors: issues,
-        requestId: req.id,
-      });
+      if (err instanceof ZodError) {
+        return res.status(422).json({
+          success: false,
+          message: 'Invalid request',
+          errors: err.issues.map((i) => ({
+            path: i.path.join('.'),
+            message: i.message,
+          })),
+        });
+      }
+      next(err);
     }
   };
 }
