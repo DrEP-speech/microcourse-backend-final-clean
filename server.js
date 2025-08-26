@@ -2,261 +2,167 @@
 
 import 'dotenv/config';
 import express from 'express';
-import helmet from 'helmet';
 import cors from 'cors';
-import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import fs from 'node:fs';
-import YAML from 'yaml';
+import mongoose from 'mongoose';
 import pino from 'pino';
 import pinoHttp from 'pino-http';
-import mongoose from 'mongoose';
-import { randomUUID } from 'node:crypto';
-import client from 'prom-client';
-
-// Rate limiting
-import { RateLimiterRedis, RateLimiterMemory } from 'rate-limiter-flexible';
+import { RateLimiterMemory, RateLimiterRedis } from 'rate-limiter-flexible';
 import IORedis from 'ioredis';
+import fs from 'fs';
+import path from 'path';
+import YAML from 'yaml';
+import swaggerUi from 'swagger-ui-express';
+import { fileURLToPath } from 'url';
 
-// Routes
-import authRoutes from './routes/authRoutes.js'; // exposes /csrf, /signup, /login, /me, etc.
+// ── env & flags ────────────────────────────────────────────────────────────────
+const isProd  = process.env.NODE_ENV === 'production';
+const PORT    = Number(process.env.PORT || 5000);
+const API_PREFIX = process.env.API_PREFIX || '/api';
+const ENABLE_DOCS = (process.env.ENABLE_DOCS || (isProd ? 'false' : 'true')).toLowerCase() === 'true';
 
-// ────────────────────────────────────────────────────────────────────────────────
-// Setup
-// ────────────────────────────────────────────────────────────────────────────────
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ── logger (pretty in dev, JSON in prod) ───────────────────────────────────────
+const log = pino(
+  isProd
+    ? {}
+    : {
+        transport: {
+          target: 'pino-pretty',
+          options: { singleLine: true, colorize: true },
+        },
+      }
+);
+const httpLogger = pinoHttp({ logger: log, autoLogging: true });
 
-const isProd = process.env.NODE_ENV === 'production';
-const PORT = Number(process.env.PORT || 5000);
+// ── process-level guards (declare after `log`) ─────────────────────────────────
+process.on('uncaughtException', (err) =>
+  log.error({ err }, 'UNCAUGHT_EXCEPTION')
+);
+process.on('unhandledRejection', (err) =>
+  log.error({ err }, 'UNHANDLED_REJECTION')
+);
 
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: isProd ? undefined : { target: 'pino-pretty', options: { colorize: true } }
-});
-const log = logger; // alias
-
+// ── express app ────────────────────────────────────────────────────────────────
 const app = express();
-app.set('trust proxy', 1); // needed for secure cookies behind proxies (Render/Cloudflare)
+app.disable('x-powered-by');
 
-// ────────────────────────────────────────────────────────────────────────────────
-/** Mongo connect */
-const MONGO_URL = process.env.MONGO_URL || process.env.MONGODB_URI;
-if (!MONGO_URL) {
-  log.warn('MONGO_URL not set – remember to configure your database!');
-}
-mongoose
-  .connect(MONGO_URL, { autoIndex: !isProd })
-  .then(() => log.info('✅ Mongo connected'))
-  .catch((err) => {
-    log.error({ err }, 'Mongo connection error');
-    process.exit(1);
-  });
-
-// ────────────────────────────────────────────────────────────────────────────────
-/** Redis client (optional) */
-let redis;
-let rateLimiter;
-try {
-  if (process.env.REDIS_URL) {
-    redis = new IORedis(process.env.REDIS_URL, {
-      lazyConnect: true,
-      maxRetriesPerRequest: 3,
-      enableAutoPipelining: true
-    });
-    await redis.connect();
-    log.info('🔌 Redis connected');
-
-    rateLimiter = new RateLimiterRedis({
-      storeClient: redis,
-      keyPrefix: 'rl',
-      points: 20,          // requests
-      duration: 60,        // per 60s
-      execEvenly: true
-    });
-  } else {
-    log.warn('REDIS_URL not set – using in-memory rate limiter');
-    rateLimiter = new RateLimiterMemory({
-      keyPrefix: 'rl',
-      points: 20,
-      duration: 60
-    });
-  }
-} catch (err) {
-  log.error({ err }, 'Redis init failed – falling back to in-memory limiter');
-  rateLimiter = new RateLimiterMemory({ keyPrefix: 'rl', points: 20, duration: 60 });
-}
-
-/** Rate-limit middleware (per IP) */
-const rateLimit = (points = 10, duration = 60) => {
-  return async (req, res, next) => {
-    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
-    try {
-      // create a per-route limiter instance with same store
-      const perRoute = rateLimiter?.storeClient
-        ? new RateLimiterRedis({
-            storeClient: rateLimiter.storeClient,
-            keyPrefix: `rl:${req.path}`,
-            points,
-            duration
-          })
-        : new RateLimiterMemory({ keyPrefix: `rl:${req.path}`, points, duration });
-
-      await perRoute.consume(ip);
-      next();
-    } catch (rej) {
-      const retrySecs = Math.ceil((rej.msBeforeNext || 1000) / 1000);
-      res.setHeader('Retry-After', String(retrySecs));
-      return res.status(429).json({ success: false, message: 'Too many requests' });
-    }
-  };
-};
-
-// ────────────────────────────────────────────────────────────────────────────────
-/** CORS – allow same-origin and ALLOWED_ORIGINS (comma-separated list) */
+// CORS
 const allowed = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
-const toRegex = (pattern) => {
-  if (pattern.startsWith('/') && pattern.endsWith('/')) return new RegExp(pattern.slice(1, -1));
-  // escape string for exact match
-  return new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$');
-};
-const allowRegexes = allowed.map(toRegex);
-
-const isSameOrigin = (origin, reqHost) => {
-  if (!origin) return true; // non-CORS or same-origin XHR without Origin header
-  try {
-    return new URL(origin).host === reqHost;
-  } catch {
-    return false;
-  }
-};
-
 app.use(
-  cors((req, cb) => {
-    const origin = req.header('Origin');
-    const reqHost = req.headers.host;
-    const ok =
-      isSameOrigin(origin, reqHost) ||
-      (origin && allowRegexes.some((re) => re.test(origin)));
-
-    cb(ok ? null : new Error(`CORS blocked for: ${origin}`), {
-      origin: ok,
-      credentials: true
-    });
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true); // allow curl/postman
+      cb(null, allowed.includes(origin));
+    },
+    credentials: true,
   })
 );
 
-// ────────────────────────────────────────────────────────────────────────────────
-/** Security / parsers / logging */
-app.use(
-  helmet({
-    crossOriginOpenerPolicy: { policy: 'same-origin' },
-    crossOriginResourcePolicy: { policy: 'cross-origin' } // allow Swagger assets
-  })
-);
-app.use(compression());
 app.use(cookieParser());
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: process.env.JSON_LIMIT || '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: process.env.FORM_LIMIT || '1mb' }));
+app.use(httpLogger);
 
-app.use(
-  pinoHttp({
-    logger,
-    customProps: (req) => ({ requestId: req.id })
-  })
-);
+// ── simple rate-limit (Redis if available else memory) ────────────────────────
+let limiter;
+(() => {
+  const url = process.env.REDIS_URL;
+  if (!url) {
+    log.warn('REDIS_URL not set – using in-memory rate limiter');
+    limiter = new RateLimiterMemory({ points: 100, duration: 15 * 60, keyPrefix: 'rl' });
+    return;
+  }
+  const redis = new IORedis(
+    url,
+    url.startsWith('rediss://') ? { tls: { rejectUnauthorized: false } } : {}
+  );
+  redis.on('error', (err) => log.warn({ err }, 'redis error'));
+  limiter = new RateLimiterRedis({
+    storeClient: redis,
+    points: 100,
+    duration: 15 * 60,
+    keyPrefix: 'rl',
+    execEvenly: true,
+  });
+})();
 
-// attach a requestId for error responses
-app.use((req, _res, next) => {
-  req.requestId = req.requestId || randomUUID();
-  next();
+const rateLimitMw = (req, res, next) =>
+  limiter
+    .consume(req.ip)
+    .then(() => next())
+    .catch(() => res.status(429).json({ success: false, message: 'Too many requests' }));
+
+app.use(rateLimitMw);
+
+// ── routes: healthz, OpenAPI (JSON) & docs ────────────────────────────────────
+app.get('/healthz', (_req, res) => {
+  // keep the same format you’ve been using
+  res.type('text').send('\n  ok\n  --\nTrue\n');
 });
 
-// ────────────────────────────────────────────────────────────────────────────────
-/** OpenAPI: /openapi.json and /docs */
-const openapiPath = path.join(__dirname, 'docs', 'openapi.yaml');
-let openapiJson = {};
+// ESM-safe __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+
+// Load OpenAPI YAML -> JSON (if present)
+let openapiJson = null;
 try {
-  const raw = fs.readFileSync(openapiPath, 'utf8');
-  openapiJson = YAML.parse(raw);
+  const openapiPath = path.join(__dirname, 'docs', 'openapi.yaml');
+  if (fs.existsSync(openapiPath)) {
+    const yamlText = fs.readFileSync(openapiPath, 'utf8');
+    openapiJson = YAML.parse(yamlText);
+  }
 } catch (err) {
-  log.warn({ err }, 'OpenAPI YAML not found or invalid; /openapi.json will return minimal doc');
-  openapiJson = {
-    openapi: '3.0.3',
-    info: { title: 'MicroCourse API', version: '1.0.0' },
-    servers: [{ url: '/api', description: 'Base API' }],
-    paths: {}
-  };
+  log.warn({ err }, 'Unable to load OpenAPI spec');
 }
 
-app.get('/openapi.json', (_req, res) => res.json(openapiJson));
-
-// Swagger UI
-import swaggerUi from 'swagger-ui-express';
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiJson, { explorer: false }));
-
-// ────────────────────────────────────────────────────────────────────────────────
-/** Prometheus metrics at /metrics */
-client.collectDefaultMetrics();
-app.get('/metrics', async (_req, res) => {
-  res.set('Content-Type', client.register.contentType);
-  res.end(await client.register.metrics());
+app.get('/openapi.json', (_req, res) => {
+  if (!openapiJson) return res.status(404).json({ error: 'OpenAPI spec not bundled' });
+  res.json(openapiJson);
 });
 
-// ────────────────────────────────────────────────────────────────────────────────
-/** Healthcheck */
-app.get('/healthz', (_req, res) => res.json({ ok: true }));
+// Swagger UI (only when enabled)
+if (ENABLE_DOCS && openapiJson) {
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiJson, { explorer: true }));
+}
 
-// ────────────────────────────────────────────────────────────────────────────────
-/** API Routes (versionless base: /api) */
-const api = express.Router();
+// ── API routes ────────────────────────────────────────────────────────────────
+import authRoutes from './routes/authRoutes.js';
+app.use(API_PREFIX, authRoutes);
 
-Update OpenAPI too (short entry):
-
-api.use('/auth/csrf',  rateLimit(20, 60));
-api.use('/auth/signup', rateLimit(5, 60));
-api.use('/auth/refresh', rateLimit(10, 60));
-api.use('/auth/login',  rateLimit(8, 60));
-// Keep your existing rateLimit util
-api.use('/auth/refresh',          rateLimit(10, 60));
-api.use('/auth/logout-everywhere', rateLimit(5, 60));
-
-// ────────────────────────────────────────────────────────────────────────────────
-/** 404 + error handling */
-app.use((req, res, next) => {
-  if (res.headersSent) return next();
-  return res.status(404).json({
-    success: false,
-    message: `Route not found: ${req.method} ${req.originalUrl}`,
-    requestId: req.requestId
-  });
-});
-
+// 404 & error handler
+app.use((req, res) => res.status(404).json({ success: false, message: 'Not found' }));
 app.use((err, _req, res, _next) => {
-  const status = err.status || err.statusCode || 500;
-  const message = isProd ? (status === 500 ? 'Internal Server Error' : err.message) : err.message || String(err);
-  if (status >= 500) log.error({ err }, 'Unhandled error');
-  res.status(status).json({ success: false, message });
+  log.error({ err }, 'request_error');
+  res
+    .status(err.status || 500)
+    .json({ success: false, message: err.message || 'Internal Server Error' });
 });
 
-// ────────────────────────────────────────────────────────────────────────────────
-/** Start */
-const server = app.listen(PORT, () => {
-  const allowListShown = allowed.length ? allowed.join(', ') : '(none)';
-  log.info(`✅ Server listening on :${PORT} (${isProd ? 'production' : 'development'})`);
-  log.info(`CORS: allowed origins -> ${allowListShown}`);
-});
-
-// Handle EADDRINUSE restarts more safely (optional)
-server.on('error', (e) => {
-  if (e.code === 'EADDRINUSE') {
-    log.error('Port in use. Set PORT to a free port or stop the other process.');
+// ── DB connect & start ────────────────────────────────────────────────────────
+async function start() {
+  try {
+    const mongoUri = process.env.MONGO_URI || process.env.MONGO_URL;
+    if (!mongoUri) log.warn('MONGO_URI/MONGO_URL not set – remember to configure your database!');
+    if (mongoUri) {
+      await mongoose.connect(mongoUri, {
+        dbName: process.env.MONGO_DB || undefined,
+        serverSelectionTimeoutMS: 10000,
+      });
+      log.info('🔌 Mongo connected');
+    }
+  } catch (err) {
+    log.error({ err }, 'Mongo connection error');
   }
-  process.exit(1);
-});
+
+  app.listen(PORT, () => {
+    log.info(`🚀 Server listening on :${PORT} (${process.env.NODE_ENV || 'development'})`);
+    log.info(`CORS: allowed origins -> ${allowed.join(', ') || '(none)'}`);
+  });
+}
+
+start();

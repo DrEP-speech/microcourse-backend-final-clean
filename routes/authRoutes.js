@@ -1,36 +1,26 @@
-// routes/authRoutes.js
 import { Router } from 'express';
-import {
-  signup,
-  login,
-  me,
-  refresh,
-  logoutEverywhere,
-  issueCsrf,
-} from '../controllers/authController.js';
-
-// ✅ requireAuth is a NAMED export from middleware/requireAuth.js
+import { signup, login, me, refresh, logoutEverywhere } from '../controllers/authController.js';
+import { issueCsrf } from '../controllers/csrfController.js';
 import { requireAuth } from '../middleware/requireAuth.js';
-
-// If your CSRF middleware is a default export, keep this line.
-// If it's a named export (`export const requireCsrf = ...`), change to:
-//   import { requireCsrf } from '../middleware/requireCsrf.js';
-
+import { requireCsrf } from '../middleware/requireCsrf.js';
+import { validate } from '../middleware/validate.js';
+import { signupSchema, loginSchema } from '../validators/authSchemas.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
 
 const router = Router();
 
-// Public: issue CSRF token + cookie
-router.get('/csrf', issueCsrf);
+// CSRF token (no auth)
+router.get('/csrf', asyncHandler(issueCsrf));
 
-// CSRF-protected public actions
-router.post('/signup', requireCsrf, signup);
-router.post('/login',  requireCsrf, login);
-router.post('/refresh', requireCsrf, refresh);
+// signup / login need CSRF + body validation
+router.post('/signup', requireCsrf, validate(signupSchema), asyncHandler(signup));
+router.post('/login',  requireCsrf, validate(loginSchema),  asyncHandler(login));
 
-// Authenticated + CSRF-protected action
-router.post('/logout-everywhere', requireAuth, requireCsrf, logoutEverywhere);
+// session info (cookie or bearer)
+router.get('/me', requireAuth, asyncHandler(me));
 
-// Authenticated read
-router.get('/me', requireAuth, me);
+// optional extras if you added them
+router.post('/refresh',           requireCsrf, asyncHandler(refresh));
+router.post('/logout-everywhere', requireCsrf, requireAuth, asyncHandler(logoutEverywhere));
 
 export default router;
