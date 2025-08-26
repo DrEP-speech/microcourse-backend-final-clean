@@ -98,7 +98,7 @@ const rateLimitMw = (req, res, next) =>
 
 app.use(rateLimitMw);
 
-// ── routes: healthz, OpenAPI (JSON) & docs ────────────────────────────────────
+// ── routes: ────────────────────────────────────
 app.get('/healthz', (_req, res) => {
   // keep the same format you’ve been using
   res.type('text').send('\n  ok\n  --\nTrue\n');
