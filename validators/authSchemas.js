@@ -1,89 +1,32 @@
-// validators/authSchemas.js
-// ESM. Strong, future-proof payload validation for auth endpoints.
+﻿import { z } from "zod";
 
-import { z } from 'zod';
+const emailField = z.string().trim().min(1,"Email is required").email("Valid email required").transform(v=>v.toLowerCase());
+const passwordField = z.string().min(8,"Min 8 characters").max(256,"Password too long");
+const nameField = z.string().trim().min(1,"Name is required").max(120,"Name too long");
 
-/* ---------------- Password policy knobs (env-tunable) ---------------- */
-const MIN_LEN = Number(process.env.PASSWORD_MIN_LENGTH || 8);
-const MAX_LEN = Number(process.env.PASSWORD_MAX_LENGTH || 72);
-const REQUIRE_COMPLEXITY = (process.env.PASSWORD_REQUIRE_COMPLEXITY || 'false') === 'true';
-const COMPLEXITY = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
+export const signupSchema = z.object({
+  name: nameField,
+  email: emailField,
+  password: passwordField,
+  locale: z.string().trim().max(32).optional(),
+  timezone: z.string().trim().max(64).optional(),
+  termsAccepted: z.boolean().optional(),
+}).strict().refine(d => d.termsAccepted !== false, { path: ["termsAccepted"], message: "You must accept the terms" });
 
-/* ---------------- Shared primitives & helpers ---------------- */
-const trim = (s) => (typeof s === 'string' ? s.trim() : s);
+export const loginSchema = z.object({
+  email: emailField,
+  password: passwordField,
+}).strict();
 
-const emailSchema = z
-  .string({ required_error: 'Email is required' })
-  .email('Valid email required')
-  .transform((v) => trim(v).toLowerCase());
+export const refreshSchema = z.object({
+  refreshToken: z.string().min(1, "refreshToken required"),
+}).strict();
 
-const passwordSchema = z
-  .string({ required_error: 'Password is required' })
-  .min(MIN_LEN, `Minimum ${MIN_LEN} characters`)
-  .max(MAX_LEN, `Maximum ${MAX_LEN} characters`)
-  .superRefine((val, ctx) => {
-    if (REQUIRE_COMPLEXITY && !COMPLEXITY.test(val)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Must include upper, lower, number, and symbol',
-      });
-    }
-  });
-
-/* ---------------- Signup ----------------
-   Designed to be forward-compatible with invites, SSO flags, captcha, etc.
-*/
-export const signupSchema = z
-  .object({
-    name: z
-      .string({ required_error: 'Name is required' })
-      .min(1, 'Name is required')
-      .max(100, 'Name is too long')
-      .transform((v) => trim(v)),
-    email: emailSchema,
-    password: passwordSchema,
-
-    // Optional knobs you can start using later without breaking clients:
-    inviteCode: z.string().trim().max(64).optional(),
-    captchaToken: z.string().trim().max(2048).optional(), // turn on when captcha is enabled
-    // “remember me” hints how long you keep refresh token
-    rememberMe: z.boolean().optional(),
-
-    // Soft metadata for analytics or personalization
-    locale: z.string().trim().max(16).optional(),
-    timezone: z.string().trim().max(64).optional(),
-
-    // If you require explicit terms at signup later:
-    termsAccepted: z.boolean().optional(),
-  })
-  .strict('Unexpected fields in signup payload');
-
-/* ---------------- Login ----------------
-   Supports either classic email+password, or username/identifier if you add it later.
-*/
-export const loginSchema = z
-  .object({
-    // keep email primary
-    email: emailSchema.optional(),
-    // optional alt identifier for future username login
-    identifier: z.string().trim().min(1).max(254).optional(),
-    password: passwordSchema,
-    rememberMe: z.boolean().optional(),
-    captchaToken: z.string().trim().max(2048).optional(),
-  })
-  .refine(
-    (v) => !!v.email || !!v.identifier,
-    { message: 'Provide email or identifier', path: ['email'] }
-  )
-  .transform((v) => {
-    // normalize: if identifier is an email, move it to email
-    if (!v.email && v.identifier && /^[^@]+@[^@]+\.[^@]+$/.test(v.identifier)) {
-      v.email = v.identifier.toLowerCase();
-    }
-    return v;
-  })
-  .strict('Unexpected fields in login payload');
-
-/* ------------- Types (optional, for editor intellisense) ------------- */
-/** @typedef {z.infer<typeof signupSchema>} SignupBody */
-/** @typedef {z.infer<typeof loginSchema>}  LoginBody  */
+export const userPublicShape = z.object({
+  _id: z.string(),
+  email: z.string().email(),
+  name: z.string(),
+  role: z.enum(["student","instructor","admin"]).optional(),
+  createdAt: z.string().datetime().optional(),
+  updatedAt: z.string().datetime().optional(),
+}).strict();

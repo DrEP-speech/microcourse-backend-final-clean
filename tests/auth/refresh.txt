@@ -1,0 +1,10 @@
+  /auth/refresh:
+    post:
+      ...
+      responses:
+        "200":
+          ...
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'   # <— add this
