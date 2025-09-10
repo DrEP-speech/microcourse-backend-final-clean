@@ -26,3 +26,7 @@ coverage/
 .vscode/
 .idea/
 *.swp
+
+# backups
+*.bak
+routes/*.backup.js
