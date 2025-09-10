@@ -1,11 +1,8 @@
-import express from 'express';
-import { listResults, createResult, getResult } from '../controllers/quizResultController.js';
-// import { requireAuth } from '../middleware/auth.js';
+import { Router } from 'express';
+const router = Router();
 
-const router = express.Router();
-
-router.get('/', /* requireAuth, */ listResults);
-router.post('/', /* requireAuth, */ createResult);
-router.get('/:id', /* requireAuth, */ getResult);
+router.get('/', (req, res) => {
+  res.json([{ _id: 'q1', title: 'Demo Quiz' }]);
+});
 
 export default router;

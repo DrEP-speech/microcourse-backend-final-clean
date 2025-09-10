@@ -1,13 +1,9 @@
-import express from 'express';
-import { listCourses, getCourse, createCourse, updateCourse, deleteCourse } from '../controllers/courseController.js';
-// import { requireAuth } from '../middleware/auth.js';
+import { Router } from 'express';
+const router = Router();
 
-const router = express.Router();
-
-router.get('/', listCourses);
-router.post('/', /* requireAuth, */ createCourse);
-router.get('/:id', getCourse);
-router.patch('/:id', /* requireAuth, */ updateCourse);
-router.delete('/:id', /* requireAuth, */ deleteCourse);
+router.get('/', (req, res) => {
+  res.json([{ _id: 'c1', title: 'Demo Course' }]);
+});
 
 export default router;
+
