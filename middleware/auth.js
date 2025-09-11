@@ -1,38 +1,14 @@
-// middleware/auth.js
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import jwt from 'jsonwebtoken';
 
-const COOKIE_NAME = process.env.COOKIE_NAME || "mc_token";
-const JWT_SECRET  = process.env.JWT_SECRET  || "change-me";
-
-// Require a valid auth cookie; attaches full user doc to req.user
-export async function requireAuth(req, res, next) {
+export function authBearer(req, res, next) {
+  const h = req.headers.authorization || '';
+  const token = h.startsWith('Bearer ') ? h.slice(7) : null;
+  if (!token) return res.status(401).json({ success:false, message:'Missing token' });
   try {
-    const token = req.cookies?.[COOKIE_NAME];
-    if (!token) {
-      return res.status(401).json({ success: false, message: "Not authenticated" });
-    }
-
-    const payload = jwt.verify(token, JWT_SECRET); // e.g. { sub: userId }
-    const user = await User.findById(payload.sub).lean();
-    if (!user) {
-      return res.status(401).json({ success: false, message: "Not authenticated" });
-    }
-
-    req.user = user;
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = payload; // { id, email }
     next();
-  } catch (err) {
-    return res.status(401).json({ success: false, message: "Invalid or expired token" });
+  } catch {
+    res.status(401).json({ success:false, message:'Invalid token' });
   }
 }
-
-// Optional role guard for admin/mod endpoints
-export const requireRole = (...roles) => (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, message: "Not authenticated" });
-  }
-  if (!roles.includes(req.user.role)) {
-    return res.status(403).json({ success: false, message: "Forbidden" });
-  }
-  next();
-};
