@@ -56,6 +56,27 @@ r.post('/bulk', authBearer, async (req, res) => {
     res.status(400).json({ success: false, message: e.message || 'bulk insert failed' });
   }
 });
+// routes/courseRoutes.js (excerpt)
+r.post('/bulk', authBearer, async (req, res) => {
+  const arr = Array.isArray(req.body) ? req.body : null;
+  if (!arr || arr.length === 0) return res.status(400).json({ success:false, message:'Body must be a non-empty array' });
+  if (arr.length > 50)          return res.status(400).json({ success:false, message:'Max 50 items' });
+
+  const items = arr.map(i => {
+    const title = (i?.title ?? '').toString().trim();
+    if (!title) throw new Error('title is required for each item');
+    return {
+      title,
+      description: typeof i?.description === 'string' ? i.description : undefined,
+      published: !!i?.published,
+      owner: req.user.id,
+    };
+  });
+
+  const docs = await Course.insertMany(items, { ordered: true });
+  res.status(201).json({ success:true, inserted: docs.map(d => d._id) });
+});
+
 
 /** CREATE (auth) */
 r.post('/', authBearer, async (req, res) => {
