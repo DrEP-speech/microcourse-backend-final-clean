@@ -15,20 +15,7 @@ r.get('/', async (_req, res) => {
   res.json(docs);
 });
 
-/** READ one (public) */
-r.get('/:id', async (req, res) => {
-  const { id } = req.params;
-  if (!mongoose.isValidObjectId(id)) {
-    return res.status(400).json({ success: false, message: 'Invalid id' });
-  }
-  const doc = await Course.findById(id)
-    .select('_id title description published owner createdAt')
-    .lean();
-  if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
-  res.json(doc);
-});
-
-/** BULK create (auth) — keep BEFORE any confusing param routes */
+/** BULK create (auth) — keep BEFORE any param routes so /bulk isn't mistaken for an :id */
 r.post('/bulk', authBearer, async (req, res) => {
   const arr = Array.isArray(req.body) ? req.body : null;
   if (!arr || arr.length === 0) {
@@ -62,6 +49,19 @@ r.post('/bulk', authBearer, async (req, res) => {
   }
 });
 
+/** READ one (public) */
+r.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.isValidObjectId(id)) {
+    return res.status(400).json({ success: false, message: 'Invalid id' });
+  }
+  const doc = await Course.findById(id)
+    .select('_id title description published owner createdAt')
+    .lean();
+  if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
+  res.json(doc);
+});
+
 /** CREATE (auth) */
 r.post('/', authBearer, async (req, res) => {
   const { title, description, published } = req.body ?? {};
@@ -88,10 +88,12 @@ r.patch('/:id', authBearer, async (req, res) => {
   if (doc.owner.toString() !== req.user.id) {
     return res.status(403).json({ success: false, message: 'Forbidden' });
   }
+
   const { title, description, published } = req.body ?? {};
   if (title !== undefined) doc.title = String(title);
   if (description !== undefined) doc.description = String(description);
   if (published !== undefined) doc.published = !!published;
+
   await doc.save();
   res.json({ success: true });
 });
