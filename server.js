@@ -58,24 +58,28 @@ app.get('/healthz', (_req, res) => res.json({ ok: true, scope: 'root' }));
 const api = Router();
 api.get('/health', (_req, res) => res.json({ ok: true, scope: 'api' }));
 
-// TEMP: route inspector to prove what’s mounted (remove later)
+// TEMP: route inspector — remove later once verified
 api.get('/_routes', (_req, res) => {
-  const list = [];
+  const out = [];
   for (const layer of api.stack) {
-    if (layer?.route) list.push(...Object.keys(layer.route.methods).map(m => `${m.toUpperCase()} ${layer.route.path}`));
-    else if (layer?.name === 'router' && layer?.handle?.stack) {
-      // show nested router paths (prefixed mount path if present)
-      const mount = layer.regexp?.fast_star ? '' : (layer.regexp?.fast_slash ? '' : (layer?.regexp?.source || ''));
+    if (layer?.route) {
+      const paths = Object.keys(layer.route.methods).map(m => `${m.toUpperCase()} ${layer.route.path}`);
+      out.push(...paths);
+    } else if (layer?.name === 'router' && layer?.handle?.stack) {
+      // nested router (mounted at /auth, /courses, /quizzes)
+      const mount = layer.regexp?.fast_slash ? '' : ''; // keep simple
       for (const l2 of layer.handle.stack) {
-        if (l2.route) list.push(...Object.keys(l2.route.methods).map(m => `${m.toUpperCase()} ${mount} ${l2.route.path}`.trim()));
+        if (l2?.route) {
+          out.push(...Object.keys(l2.route.methods).map(m => `${m.toUpperCase()} ${mount}${l2.route.path}`));
+        }
       }
     }
   }
-  res.json(list.sort());
+  res.json(out.sort());
 });
 
 api.use('/auth',    authRoutes);
-api.use('/courses', courseRoutes);  // must contain POST /bulk
+api.use('/courses', courseRoutes);  // -> must contain POST /bulk in courseRoutes.js
 api.use('/quizzes', quizRoutes);
 
 app.use('/api', api);

@@ -6,13 +6,13 @@ import Course from '../models/Course.js';
 
 const r = Router();
 
-/** LIST (public) */
+// LIST
 r.get('/', async (_req, res) => {
   const docs = await Course.find({}).select('_id title').sort({ createdAt: -1 }).lean();
   res.json(docs);
 });
 
-/** BULK create (auth) — keep BEFORE param routes */
+// BULK (keep before param routes)
 r.post('/bulk', authBearer, async (req, res) => {
   const arr = Array.isArray(req.body) ? req.body : null;
   if (!arr || arr.length === 0) return res.status(400).json({ success:false, message:'Body must be a non-empty array' });
@@ -38,7 +38,7 @@ r.post('/bulk', authBearer, async (req, res) => {
   res.status(201).json({ success:true, inserted: docs.map(d => d._id) });
 });
 
-/** READ (public) */
+// READ one
 r.get('/:id', async (req, res) => {
   const { id } = req.params;
   if (!mongoose.isValidObjectId(id)) return res.status(400).json({ success:false, message:'Invalid id' });
@@ -47,7 +47,7 @@ r.get('/:id', async (req, res) => {
   res.json(doc);
 });
 
-/** CREATE (auth) */
+// CREATE
 r.post('/', authBearer, async (req, res) => {
   const { title, description, published } = req.body ?? {};
   const t = (title ?? '').toString().trim();
@@ -62,7 +62,7 @@ r.post('/', authBearer, async (req, res) => {
   res.status(201).json({ success:true, _id: doc._id });
 });
 
-/** UPDATE (auth + owner) */
+// UPDATE
 r.patch('/:id', authBearer, async (req, res) => {
   const { id } = req.params;
   if (!mongoose.isValidObjectId(id)) return res.status(400).json({ success:false, message:'Invalid id' });
@@ -79,7 +79,7 @@ r.patch('/:id', authBearer, async (req, res) => {
   res.json({ success:true });
 });
 
-/** DELETE (auth + owner) */
+// DELETE
 r.delete('/:id', authBearer, async (req, res) => {
   const { id } = req.params;
   if (!mongoose.isValidObjectId(id)) return res.status(400).json({ success:false, message:'Invalid id' });
