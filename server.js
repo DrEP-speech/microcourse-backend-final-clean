@@ -1,4 +1,5 @@
-// server.js (ESM, diagnostic-safe)
+
+// server.js (ESM, resilient & diagnostic-friendly)
 import 'dotenv/config';
 import express, { Router } from 'express';
 import helmet from 'helmet';
@@ -6,11 +7,6 @@ import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
-
-// ROUTES (these must exist; see stubs below)
-import authRoutes from './routes/authRoutes.js';
-import courseRoutes from './routes/courseRoutes.js';
-import quizRoutes from './routes/quizRoutes.js';
 
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
@@ -43,16 +39,31 @@ app.use(cors({
   credentials: true,
 }));
 
-// ── Health (root and API)
+// ── Health (root + api)
 app.get('/healthz', (_req, res) => res.json({ ok: true, scope: 'root' }));
 
 const api = Router();
 api.get('/health', (_req, res) => res.json({ ok: true, scope: 'api' }));
 
-// ── Feature mounts
-api.use('/auth', authRoutes);      // /api/auth/...
-api.use('/courses', courseRoutes); // /api/courses
-api.use('/quizzes', quizRoutes);   // /api/quizzes
+// ── Inlined demo data routes so they can’t 404 while you debug
+api.get('/courses', (_req, res) => {
+  res.json([{ _id: 'c1', title: 'Demo Course' }]);
+});
+api.get('/quizzes', (_req, res) => {
+  res.json([{ _id: 'q1', title: 'Demo Quiz' }]);
+});
+
+// ── Try to load your real authRoutes if present; otherwise return 501
+let authRoutes;
+try {
+  ({ default: authRoutes } = await import('./routes/authRoutes.js'));
+} catch (e) {
+  const stub = Router();
+  stub.all('*', (_req, res) => res.status(501).json({ success: false, message: 'authRoutes missing' }));
+  authRoutes = stub;
+}
+api.use('/auth', authRoutes); // /api/auth/*
+
 app.use('/api', api);
 
 // ── 404 + error
@@ -63,7 +74,7 @@ app.use((err, _req, res, _next) => {
   res.status(status).json({ success:false, message });
 });
 
-// ── Start (with optional DB skip)
+// ── Start (Mongo optional for now)
 async function start() {
   if (process.env.SKIP_DB === '1') {
     console.log('⚠️  SKIP_DB=1 set → not connecting to Mongo for this deploy');
@@ -75,7 +86,6 @@ async function start() {
     }
     await mongoose.connect(MONGO, { serverSelectionTimeoutMS: 10000, autoIndex: !isProd });
   }
-
   app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 }
 start().catch((err) => { console.error('FAILED_TO_START', err); process.exit(1); });
