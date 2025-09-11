@@ -6,6 +6,9 @@ import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
+import rateLimit from 'express-rate-limit';
+import courseRoutes from './routes/courseRoutes.js';
+
 
 // ---- feature routes (make sure these files export `export default Router()` )
 import authRoutes from './routes/authRoutes.js';
@@ -26,6 +29,7 @@ app.use(compression());
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
+
 
 // ---- CORS
 const raw = (process.env.ALLOWED_ORIGINS || '').trim();
@@ -49,12 +53,25 @@ app.use(cors({
   credentials: true,
 }));
 
-// ---- health (root)
-app.get('/healthz', (_req, res) => res.json({ ok: true, scope: 'root' }));
 
 // ---- API router
 const api = Router();
-api.get('/health', (_req, res) => res.json({ ok: true, scope: 'api' }));
+
+// global limiter (adjust to taste)
+app.use(rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 200,              // 200 req/min per IP
+  standardHeaders: true,
+  legacyHeaders: false
+}));
+
+// tighter on auth endpoints
+app.use('/api/auth', rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 40,                   // 40 auth hits / 10 min / IP
+  standardHeaders: true,
+  legacyHeaders: false
+}));
 
 // mount feature routers
 api.use('/auth',    authRoutes);     // -> /api/auth/...
