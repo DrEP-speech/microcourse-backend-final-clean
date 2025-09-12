@@ -16,7 +16,7 @@ r.get('/', async (_req, res) => {
   res.json(docs);
 });
 
-/** BULK create (auth) */
+/** BULK create (auth) — keep BEFORE param routes */
 r.post('/bulk', authBearer, async (req, res) => {
   const input = Array.isArray(req.body) ? req.body : null;
   if (!input || input.length === 0) {
@@ -54,7 +54,7 @@ r.post('/', authBearer, async (req, res) => {
   res.status(201).json({ success:true, _id: doc._id });
 });
 
-/** NESTED: list quizzes for a course (public: published only; owner may add ?all=1) */
+/** NESTED list quizzes for a course (public: published only; owner sees all) */
 r.get('/:id/quizzes', async (req, res) => {
   const { id } = req.params;
   if (!mongoose.isValidObjectId(id)) return res.status(400).json({ success:false, message:'Invalid id' });
@@ -63,17 +63,18 @@ r.get('/:id/quizzes', async (req, res) => {
   if (!course) return res.status(404).json({ success:false, message:'Course not found' });
 
   let filter = { course: id, published: true };
-  // If caller sends a valid Bearer and is the owner, allow all quizzes
+
+  // If caller is the owner (Bearer token), show all
   try {
     const auth = (req.headers.authorization || '').match(/^Bearer\s+(.+)/i);
     if (auth) {
       const jwt = await import('jsonwebtoken');
       const payload = jwt.default.verify(auth[1], process.env.JWT_SECRET);
       if (payload?.id && String(payload.id) === String(course.owner)) {
-        filter = { course: id }; // include drafts
+        filter = { course: id };
       }
     }
-  } catch { /* ignore — fall back to public filter */ }
+  } catch { /* ignore: fall back to public filter */ }
 
   const docs = await Quiz.find(filter)
     .select('_id title published createdAt')
@@ -109,7 +110,7 @@ r.patch('/:id', authBearer, async (req, res) => {
   res.json({ success:true });
 });
 
-/** DELETE (auth + owner) — CASCADE delete quizzes for this course/owner */
+/** DELETE (auth + owner) — CASCADE: remove quizzes for this course */
 r.delete('/:id', authBearer, async (req, res) => {
   const { id } = req.params;
   if (!mongoose.isValidObjectId(id)) return res.status(400).json({ success:false, message:'Invalid id' });
@@ -117,8 +118,9 @@ r.delete('/:id', authBearer, async (req, res) => {
   if (!doc) return res.status(404).json({ success:false, message:'Not found' });
   if (doc.owner.toString() !== req.user.id) return res.status(403).json({ success:false, message:'Forbidden' });
 
-  // delete quizzes owned by this user under this course
-  await Quiz.deleteMany({ owner: req.user.id, course: doc._id });
+  // Cascade delete all quizzes for this course (ownership already verified via course)
+  await Quiz.deleteMany({ course: doc._id });
+
   await doc.deleteOne();
   res.json({ success:true });
 });
