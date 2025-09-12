@@ -15,7 +15,6 @@ const courseSchema = new Schema(
 
 // Helpful indexes (define on the *schema* variable)
 courseSchema.index({ owner: 1, createdAt: -1 });
-courseSchema.index({ title: 1 });
 courseSchema.index({ published: 1, createdAt: -1 });
 
 export default model('Course', courseSchema);

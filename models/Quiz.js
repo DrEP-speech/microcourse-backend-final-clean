@@ -28,7 +28,7 @@ const quizSchema = new Schema(
 quizSchema.index({ course: 1, createdAt: -1 });
 quizSchema.index({ owner: 1, createdAt: -1 });
 quizSchema.index({ published: 1, createdAt: -1 });
-quizSchema.index({ title: 1 });
+
 
 export default model('Quiz', quizSchema);
 
