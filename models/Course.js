@@ -1,22 +1,23 @@
+// models/Course.js
 import mongoose from 'mongoose';
-const { Schema } = mongoose;
+
+const { Schema, model } = mongoose;
 
 const courseSchema = new Schema(
   {
-    title: { type: String, required: true, index: true },
-    description: { type: String },
-    published: { type: Boolean, default: false },
-    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true }
+    title:       { type: String, required: true, trim: true, index: true },
+    description: { type: String, default: '' },
+    published:   { type: Boolean, default: false, index: true },
+    owner:       { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   },
   { timestamps: true }
 );
 
-// basic text index for q= searches
-// after defining CourseSchema
-CourseSchema.index({ owner: 1, createdAt: -1 });
-CourseSchema.index({ title: 1 });
-CourseSchema.index({ published: 1, createdAt: -1 });
+// Helpful indexes (define on the *schema* variable)
+courseSchema.index({ owner: 1, createdAt: -1 });
+courseSchema.index({ title: 1 });
+courseSchema.index({ published: 1, createdAt: -1 });
 
-export default mongoose.model('Course', courseSchema);
+export default model('Course', courseSchema);
 
 
