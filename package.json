@@ -21,6 +21,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.1",
-    "zod": "^4.1.7"
+    "swagger-ui-express": "^5.0.1",
+    "yaml": "^2.8.1",
+    "zod": "^4.1.8"
   }
 }
