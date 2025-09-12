@@ -9,13 +9,9 @@ const QuestionSchema = new Schema(
     choices: {
       type: [String],
       validate: v => Array.isArray(v) && v.length >= 2,
-      default: []
+      default: [],
     },
-    correctIndex: {
-      type: Number,
-      min: 0,
-      // We won't enforce max here at schema-level to allow editing; route will sanity-check if you want
-    },
+    correctIndex: { type: Number, min: 0 },
   },
   { _id: false }
 );
@@ -24,13 +20,18 @@ const QuizSchema = new Schema(
   {
     title: { type: String, required: true, trim: true, index: true },
     description: { type: String, default: '', trim: true },
-    course: { type: Types.ObjectId, ref: 'Course', required: false, index: true },
+    // REQUIRED: every quiz is attached to a course
+    course: { type: Types.ObjectId, ref: 'Course', required: true, index: true },
     published: { type: Boolean, default: false, index: true },
     owner: { type: Types.ObjectId, ref: 'User', required: true, index: true },
     questions: { type: [QuestionSchema], default: [] },
   },
   { timestamps: true }
 );
+
+// helpful compound indexes
+QuizSchema.index({ owner: 1, course: 1, createdAt: -1 });
+QuizSchema.index({ course: 1, published: 1, createdAt: -1 });
 
 QuizSchema.set('toJSON', {
   transform(_doc, ret) {
