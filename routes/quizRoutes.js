@@ -2,15 +2,23 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { authBearer } from '../middleware/auth.js';
+import { bulkLimiter } from '../middleware/limiters.js';
 import Quiz from '../models/Quiz.js';
 import Course from '../models/Course.js';
 import { parsePaging, buildPageMeta, escapeRegex } from '../utils/pagination.js';
+import { parseSort } from '../utils/sort.js';
 
 const r = Router();
 
-/** LIST (public) with pagination; optional ?course=<id> and ?q= */
+/**
+ * GET /api/quizzes
+ * Public list with pagination + optional course filter + search + sorting
+ * Query: ?course=<id>&q=<text>&sort=published:desc,createdAt:desc
+ */
 r.get('/', async (req, res) => {
   const { limit, page, skip } = parsePaging(req);
+  const sort = parseSort(req.query.sort, ['createdAt', 'title', 'published'], { createdAt: -1 });
+
   const filter = {};
   if (req.query.course && mongoose.isValidObjectId(req.query.course)) {
     filter.course = req.query.course;
@@ -20,40 +28,54 @@ r.get('/', async (req, res) => {
 
   const [total, docs] = await Promise.all([
     Quiz.countDocuments(filter),
-    Quiz.find(filter).select('_id title course published').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Quiz.find(filter)
+      .select('_id title course published createdAt')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean(),
   ]);
 
   res.json({ items: docs, ...buildPageMeta({ total, page, limit }) });
 });
 
-/** BULK create (auth) — each item must include a course owned by user */
-r.post('/bulk', authBearer, async (req, res) => {
+/**
+ * POST /api/quizzes/bulk
+ * Auth; per-route rate limit; each item must include a course owned by the caller.
+ */
+r.post('/bulk', authBearer, bulkLimiter, async (req, res) => {
   const arr = Array.isArray(req.body) ? req.body : null;
-  if (!arr || arr.length === 0) return res.status(400).json({ success:false, message:'Body must be a non-empty array' });
-  if (arr.length > 50)          return res.status(400).json({ success:false, message:'Max 50 items per bulk request' });
+  if (!arr || arr.length === 0) {
+    return res.status(400).json({ success: false, message: 'Body must be a non-empty array' });
+  }
+  if (arr.length > 50) {
+    return res.status(400).json({ success: false, message: 'Max 50 items per bulk request' });
+  }
 
   const ids = [...new Set(arr.map(i => i?.course).filter(Boolean))];
   if (!ids.length || !ids.every(id => mongoose.isValidObjectId(id))) {
-    return res.status(400).json({ success:false, message:'Each item must include a valid course id' });
+    return res.status(400).json({ success: false, message: 'Each item must include a valid course id' });
   }
 
   const owned = await Course.find({ _id: { $in: ids }, owner: req.user.id }).select('_id').lean();
   const ownedSet = new Set(owned.map(d => String(d._id)));
   if (!ids.every(id => ownedSet.has(String(id)))) {
-    return res.status(403).json({ success:false, message:'One or more courses are not owned by you' });
+    return res.status(403).json({ success: false, message: 'One or more courses are not owned by you' });
   }
 
+  // Validate per-item
   for (const [idx, i] of arr.entries()) {
     const t = (i?.title ?? '').toString().trim();
-    if (!t) return res.status(400).json({ success:false, message:`title is required at index ${idx}` });
+    if (!t) return res.status(400).json({ success: false, message: `title is required at index ${idx}` });
+
     if (Array.isArray(i?.questions)) {
       for (const [qi, q] of i.questions.entries()) {
-        if (!q?.text) return res.status(400).json({ success:false, message:`questions[${qi}].text required at index ${idx}` });
+        if (!q?.text) return res.status(400).json({ success: false, message: `questions[${qi}].text required at index ${idx}` });
         if (!Array.isArray(q?.choices) || q.choices.length < 2) {
-          return res.status(400).json({ success:false, message:`questions[${qi}].choices must have ≥2 at index ${idx}` });
+          return res.status(400).json({ success: false, message: `questions[${qi}].choices must have ≥2 at index ${idx}` });
         }
         if (typeof q.correctIndex === 'number' && (q.correctIndex < 0 || q.correctIndex >= q.choices.length)) {
-          return res.status(400).json({ success:false, message:`questions[${qi}].correctIndex out of range at index ${idx}` });
+          return res.status(400).json({ success: false, message: `questions[${qi}].correctIndex out of range at index ${idx}` });
         }
       }
     }
@@ -68,37 +90,53 @@ r.post('/bulk', authBearer, async (req, res) => {
     questions: Array.isArray(i?.questions) ? i.questions : [],
   }));
 
-  const docs = await Quiz.insertMany(items, { ordered: true });
-  res.status(201).json({ success:true, inserted: docs.map(d => d._id) });
+  try {
+    const docs = await Quiz.insertMany(items, { ordered: true });
+    res.status(201).json({ success: true, inserted: docs.map(d => d._id) });
+  } catch (e) {
+    res.status(400).json({ success: false, message: e.message || 'bulk insert failed' });
+  }
 });
 
-/** READ one (public) */
+/**
+ * GET /api/quizzes/:id
+ * Public read.
+ */
 r.get('/:id', async (req, res) => {
   const { id } = req.params;
-  if (!mongoose.isValidObjectId(id)) return res.status(400).json({ success:false, message:'Invalid id' });
-  const doc = await Quiz.findById(id).select('_id title description published course owner questions createdAt').lean();
-  if (!doc) return res.status(404).json({ success:false, message:'Not found' });
+  if (!mongoose.isValidObjectId(id)) {
+    return res.status(400).json({ success: false, message: 'Invalid id' });
+  }
+  const doc = await Quiz.findById(id)
+    .select('_id title description published course owner questions createdAt')
+    .lean();
+  if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
   res.json(doc);
 });
 
-/** CREATE (auth + course ownership) */
+/**
+ * POST /api/quizzes
+ * Auth; course must exist and be owned by caller.
+ */
 r.post('/', authBearer, async (req, res) => {
   const { title, description, published, course, questions } = req.body ?? {};
   const t = (title ?? '').toString().trim();
-  if (!t) return res.status(400).json({ success:false, message:'title is required' });
-  if (!mongoose.isValidObjectId(course)) return res.status(400).json({ success:false, message:'valid course is required' });
+  if (!t) return res.status(400).json({ success: false, message: 'title is required' });
+  if (!mongoose.isValidObjectId(course)) {
+    return res.status(400).json({ success: false, message: 'valid course is required' });
+  }
 
   const owned = await Course.findOne({ _id: course, owner: req.user.id }).select('_id').lean();
-  if (!owned) return res.status(403).json({ success:false, message:'Course not owned by you' });
+  if (!owned) return res.status(403).json({ success: false, message: 'Course not owned by you' });
 
   if (Array.isArray(questions)) {
     for (const [qi, q] of questions.entries()) {
-      if (!q?.text) return res.status(400).json({ success:false, message:`questions[${qi}].text is required` });
+      if (!q?.text) return res.status(400).json({ success: false, message: `questions[${qi}].text is required` });
       if (!Array.isArray(q?.choices) || q.choices.length < 2) {
-        return res.status(400).json({ success:false, message:`questions[${qi}].choices must have ≥2` });
+        return res.status(400).json({ success: false, message: `questions[${qi}].choices must have ≥2` });
       }
       if (typeof q.correctIndex === 'number' && (q.correctIndex < 0 || q.correctIndex >= q.choices.length)) {
-        return res.status(400).json({ success:false, message:`questions[${qi}].correctIndex out of range` });
+        return res.status(400).json({ success: false, message: `questions[${qi}].correctIndex out of range` });
       }
     }
   }
@@ -111,25 +149,35 @@ r.post('/', authBearer, async (req, res) => {
     course,
     questions: Array.isArray(questions) ? questions : [],
   });
-  res.status(201).json({ success:true, _id: doc._id });
+
+  res.status(201).json({ success: true, _id: doc._id });
 });
 
-/** UPDATE (auth + owner; course reassignment requires ownership too) */
+/**
+ * PATCH /api/quizzes/:id
+ * Auth + owner; can reassign course (must be owned as well).
+ */
 r.patch('/:id', authBearer, async (req, res) => {
   const { id } = req.params;
-  if (!mongoose.isValidObjectId(id)) return res.status(400).json({ success:false, message:'Invalid id' });
+  if (!mongoose.isValidObjectId(id)) {
+    return res.status(400).json({ success: false, message: 'Invalid id' });
+  }
 
   const doc = await Quiz.findById(id);
-  if (!doc) return res.status(404).json({ success:false, message:'Not found' });
-  if (doc.owner.toString() !== req.user.id) return res.status(403).json({ success:false, message:'Forbidden' });
+  if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
+  if (doc.owner.toString() !== req.user.id) {
+    return res.status(403).json({ success: false, message: 'Forbidden' });
+  }
 
   const { title, description, published, course, questions } = req.body ?? {};
 
   if (course !== undefined) {
-    if (!course) return res.status(400).json({ success:false, message:'course is required' });
-    if (!mongoose.isValidObjectId(course)) return res.status(400).json({ success:false, message:'Invalid course id' });
+    if (!course) return res.status(400).json({ success: false, message: 'course is required' });
+    if (!mongoose.isValidObjectId(course)) {
+      return res.status(400).json({ success: false, message: 'Invalid course id' });
+    }
     const owned = await Course.findOne({ _id: course, owner: req.user.id }).select('_id').lean();
-    if (!owned) return res.status(403).json({ success:false, message:'New course not owned by you' });
+    if (!owned) return res.status(403).json({ success: false, message: 'New course not owned by you' });
     doc.course = course;
   }
 
@@ -138,32 +186,42 @@ r.patch('/:id', authBearer, async (req, res) => {
   if (published !== undefined) doc.published = !!published;
 
   if (questions !== undefined) {
-    if (!Array.isArray(questions)) return res.status(400).json({ success:false, message:'questions must be an array' });
+    if (!Array.isArray(questions)) {
+      return res.status(400).json({ success: false, message: 'questions must be an array' });
+    }
     for (const [qi, q] of questions.entries()) {
-      if (!q?.text) return res.status(400).json({ success:false, message:`questions[${qi}].text is required` });
+      if (!q?.text) return res.status(400).json({ success: false, message: `questions[${qi}].text is required` });
       if (!Array.isArray(q?.choices) || q.choices.length < 2) {
-        return res.status(400).json({ success:false, message:`questions[${qi}].choices must have ≥2` });
+        return res.status(400).json({ success: false, message: `questions[${qi}].choices must have ≥2` });
       }
       if (typeof q.correctIndex === 'number' && (q.correctIndex < 0 || q.correctIndex >= q.choices.length)) {
-        return res.status(400).json({ success:false, message:`questions[${qi}].correctIndex out of range` });
+        return res.status(400).json({ success: false, message: `questions[${qi}].correctIndex out of range` });
       }
     }
     doc.questions = questions;
   }
 
   await doc.save();
-  res.json({ success:true });
+  res.json({ success: true });
 });
 
-/** DELETE (auth + owner) */
+/**
+ * DELETE /api/quizzes/:id
+ * Auth + owner.
+ */
 r.delete('/:id', authBearer, async (req, res) => {
   const { id } = req.params;
-  if (!mongoose.isValidObjectId(id)) return res.status(400).json({ success:false, message:'Invalid id' });
+  if (!mongoose.isValidObjectId(id)) {
+    return res.status(400).json({ success: false, message: 'Invalid id' });
+  }
   const doc = await Quiz.findById(id);
-  if (!doc) return res.status(404).json({ success:false, message:'Not found' });
-  if (doc.owner.toString() !== req.user.id) return res.status(403).json({ success:false, message:'Forbidden' });
+  if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
+  if (doc.owner.toString() !== req.user.id) {
+    return res.status(403).json({ success: false, message: 'Forbidden' });
+  }
   await doc.deleteOne();
-  res.json({ success:true });
+  res.json({ success: true });
 });
 
 export default r;
+

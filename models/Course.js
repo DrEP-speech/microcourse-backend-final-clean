@@ -12,7 +12,10 @@ const courseSchema = new Schema(
 );
 
 // basic text index for q= searches
-courseSchema.index({ title: 'text', description: 'text' });
+// after defining CourseSchema
+CourseSchema.index({ owner: 1, createdAt: -1 });
+CourseSchema.index({ title: 1 });
+CourseSchema.index({ published: 1, createdAt: -1 });
 
 export default mongoose.model('Course', courseSchema);
 
