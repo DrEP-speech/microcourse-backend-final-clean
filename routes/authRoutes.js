@@ -10,12 +10,6 @@ import { sendResetEmail } from '../email/mailer.js';
 const r = Router();
 
 // cookie helpers
-const cookieOpts = {
-httpOnly: true, secure: true, sameSite: 'lax',
-path: '/api/auth/refresh',
-maxAge: 1000 * 60 * 60 * 24 * 30
-};
-const cookieOpts = {
 httpOnly: true,
 secure: true,
 sameSite: 'none',          // <— needed for cross-site XHR from localhost:5173
@@ -23,7 +17,6 @@ path: '/api/auth/refresh', // scope to refresh endpoint
 maxAge: 1000 * 60 * 60 * 24 * 30
 };
 };
-const clearCookie = { ...cookieOpts, maxAge: 0 };
 
 // ---- signup/login (unchanged core, but add refresh cookie) ----
 r.post('/signup', async (req, res) => {
