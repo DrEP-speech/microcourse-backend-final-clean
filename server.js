@@ -12,6 +12,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import swaggerUi from 'swagger-ui-express';
+import adminRoutes from './routes/adminRoutes.js';
+import webhookRoutes from './routes/webhookRoutes.js';
 
 // Feature routers (these files must exist and export default Router)
 import authRoutes from './routes/authRoutes.js';
@@ -44,10 +46,8 @@ const raw = (process.env.ALLOWED_ORIGINS || '').trim();
 let allowList = raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
 if (!allowList.length && !isProd) allowList = ['*'];
 
-app.use(
-  cors({
-    origin(origin, cb) {
-      if (!origin) return cb(null, true); // same-origin / curl
+app.use(cors({ origin: allowedOriginsArray, credentials: true }));
+if (!origin) return cb(null, true); // same-origin / curl
       if (allowList.includes('*')) return cb(null, true);
       try {
         const ok = allowList.some(allowed => {
@@ -120,6 +120,8 @@ api.get('/health', (_req, res) => res.json({ ok: true, scope: 'api' }));
 api.use('/auth', authRoutes);
 api.use('/courses', courseRoutes);
 api.use('/quizzes', quizRoutes);
+api.use('/admin', adminRoutes);
+api.use('/hooks', webhookRoutes);
 
 // Route inspector (DEV only)
 if (!isProd) {
