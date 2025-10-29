@@ -1,0 +1,61 @@
+{
+  "info": {
+    "name": "Microcourse Auth E2E (raw-only URLs)",
+    "_postman_id": "b9a3bb76-4d1a-497a-9c93-5a1fce6a4a42",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Login + whoami smoke tests (no host/path arrays)."
+  },
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+        "url": "{{baseUrl}}{{authBase}}/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let json = {};",
+              "try { json = pm.response.json(); } catch (e) { json = {}; }",
+              "pm.environment.set('token', json.token || '');",
+              "pm.test('Login returned token', function(){ pm.expect(json.token).to.be.a('string'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "WhoAmI",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}{{authBase}}/whoami"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = (function(){ try { return pm.response.json(); } catch(e){ return {}; } })();",
+              "pm.test('whoami success true', function(){ pm.expect(json.success).to.eql(true); });",
+              "pm.test('whoami has user object', function(){ pm.expect(json.user).to.be.an('object'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl",  "value": "http://localhost:10003" },
+    { "key": "authBase", "value": "/api/auth" },
+    { "key": "email",    "value": "owner@example.com" },
+    { "key": "password", "value": "passw0rd" },
+    { "key": "token",    "value": "" }
+  ]
+}

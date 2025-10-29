@@ -1,14 +1,18 @@
-import jwt from 'jsonwebtoken';
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-export function authBearer(req, res, next) {
+module.exports = async function (req, res, next) {
   const h = req.headers.authorization || '';
-  const token = h.startsWith('Bearer ') ? h.slice(7) : null;
-  if (!token) return res.status(401).json({ success:false, message:'Missing token' });
+  if (!h.startsWith('Bearer ')) return res.status(401).json({ success:false, code:'REQUEST_ERROR', message:'No access token' });
+  const token = h.slice(7);
+
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload; // { id, email }
+    const payload = jwt.verify(token, process.env.ACCESS_SECRET);
+    const user = await User.findById(payload.sub);
+    if (!user || !user.isActive) return res.status(401).json({ success:false, code:'REQUEST_ERROR', message:'User inactive' });
+    req.user = { id: user._id, email: user.email, name: user.name, role: user.role, createdAt: user.createdAt, updatedAt: user.updatedAt };
     next();
   } catch {
-    res.status(401).json({ success:false, message:'Invalid token' });
+    return res.status(401).json({ success:false, code:'REQUEST_ERROR', message:'Invalid access token' });
   }
-}
+};

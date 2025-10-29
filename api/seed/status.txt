@@ -1,0 +1,19 @@
+  /api/seed/status:
+    get:
+      tags: [System]
+      summary: Seed status snapshot
+      operationId: getSeedStatus
+      parameters:
+        - in: query
+          name: detail
+          description: Include sample quiz and latest result when 1
+          schema: { type: integer, enum: [0, 1], default: 0 }
+      responses:
+        "200":
+          description: Status snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"

@@ -1,0 +1,10 @@
+﻿apis:
+  main:
+    root: backend/docs/openapi.yaml
+lint:
+  rules:
+    operation-4xx-response: warn
+    operation-operationId: error
+    no-server-example.com: warn
+    info-license: warn
+    security-defined: warn

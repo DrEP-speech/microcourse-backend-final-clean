@@ -1,8 +1,9 @@
-import express from 'express';
-import { debug } from '../controllers/debugController.js';
-
+const express = require('express');
 const router = express.Router();
-router.get('/', debug);
 
-export default router;
+router.get('/health', (_req, res) => {
+  res.json({ ok: true, ts: new Date().toISOString() });
+});
 
+// existing sample-grade-payload route stays below…
+module.exports = router;

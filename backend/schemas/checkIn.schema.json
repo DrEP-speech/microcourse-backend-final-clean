@@ -1,0 +1,16 @@
+﻿{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://microcourse.ai/schemas/checkIn.json",
+  "type":"object",
+  "required":["childId","parentId","scheduledFor","status"],
+  "properties": {
+    "_id": { "type":"string" },
+    "childId": { "type":"string" },
+    "parentId": { "type":"string" },
+    "scheduledFor": { "type":"string","format":"date-time" },
+    "status": { "enum":["scheduled","done","no_show"] },
+    "notes": { "type":"string" },
+    "createdAt": { "type":"string","format":"date-time" }
+  },
+  "additionalProperties": false
+}

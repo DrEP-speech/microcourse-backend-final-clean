@@ -1,0 +1,17 @@
+﻿{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://microcourse.ai/schemas/goal.json",
+  "type":"object",
+  "required":["userId","title","status"],
+  "properties": {
+    "_id": { "type":"string" },
+    "userId": { "type":"string" },
+    "title": { "type":"string" },
+    "description": { "type":"string" },
+    "status": { "enum":["active","completed","paused"] },
+    "progress": { "type":"number" },
+    "createdAt": { "type":"string","format":"date-time" },
+    "updatedAt": { "type":"string","format":"date-time" }
+  },
+  "additionalProperties": false
+}

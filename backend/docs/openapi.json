@@ -1,0 +1,10 @@
+﻿{
+  "openapi": "3.0.3",
+  "info": { "title": "MicroCourse API", "version": "1.0.0" },
+  "paths": {
+    "/healthz": { "get": { "summary": "Liveness", "responses": { "200": { "description": "OK" } } } },
+    "/api/health": { "get": { "summary": "Readiness", "responses": { "200": { "description": "OK" } } } },
+    "/api/courses": { "get": { "summary": "List courses", "responses": { "200": { "description": "OK" } } } },
+    "/api/quizzes": { "get": { "summary": "List quizzes", "responses": { "200": { "description": "OK" } } } }
+  }
+}

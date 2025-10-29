@@ -1,0 +1,34 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quizResult.schema.json",
+  "title": "QuizResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["quizId", "userId", "score", "percentage", "totalCount", "submittedAt"],
+  "properties": {
+    "_id": { "type": "string", "pattern": "^[a-f0-9]{24}$" },
+    "quizId": { "type": "string", "pattern": "^[a-f0-9]{24}$" },
+    "userId": { "type": "string", "pattern": "^[a-f0-9]{24}$" },
+    "score": { "type": "number" },
+    "percentage": { "type": "number" },
+    "correctCount": { "type": "integer" },
+    "totalCount": { "type": "integer" },
+    "submittedAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "breakdown": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["questionId", "correct"],
+        "properties": {
+          "questionId": { "type": "string", "pattern": "^[a-f0-9]{24}$" },
+          "correct": { "type": "boolean" },
+          "awarded": { "type": "number" },
+          "selected": { "type": "array", "items": { "type": "string" } },
+          "input": { "oneOf": [ { "type": "string", "nullable": true }, { "type": "number", "nullable": true } ] }
+        }
+      }
+    }
+  }
+}

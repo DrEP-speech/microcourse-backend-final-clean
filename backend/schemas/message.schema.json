@@ -1,0 +1,16 @@
+﻿{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://microcourse.ai/schemas/message.json",
+  "type":"object",
+  "required":["threadId","fromId","toIds","body","createdAt"],
+  "properties": {
+    "_id": { "type":"string" },
+    "threadId": { "type":"string" },
+    "fromId": { "type":"string" },
+    "toIds": { "type":"array", "items": { "type":"string" } },
+    "body": { "type":"string" },
+    "attachments": { "type":"array", "items": { "type":"string" } },
+    "createdAt": { "type":"string","format":"date-time" }
+  },
+  "additionalProperties": false
+}

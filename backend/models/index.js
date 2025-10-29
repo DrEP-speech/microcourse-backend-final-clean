@@ -1,0 +1,18 @@
+﻿module.exports = {
+  User: require("./User"),
+  Course: require("./Course"),
+  Lesson: require("./Lesson"),
+  Quiz: require("./Quiz"),
+  QuizResult: require("./QuizResult"),
+  Insight: require("./Insight"),
+  Notification: require("./Notification"),
+  EmailLog: require("./EmailLog"),
+  Badge: require("./Badge"),
+  Goal: require("./Goal"),
+  Session: require("./Session"),
+  TelehealthConsent: require("./TelehealthConsent"),
+  AuditLog: require("./AuditLog"),
+  Message: require("./Message"),
+  CheckIn: require("./CheckIn"),
+  ParentAIFeedback: require("./ParentAIFeedback"),
+};

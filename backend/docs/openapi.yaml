@@ -1,0 +1,479 @@
+﻿openapi: 3.0.3
+info:
+  title: Microcourse API
+  version: 1.0.0
+  description: >
+    REST API for Microcourse. Quizzes, grading, results, and ops endpoints.
+  termsOfService: https://example.org/terms
+  contact:
+    name: Microcourse API Support
+    url: https://example.org/support
+    email: support@example.org
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.microcourse.dev
+    description: Production
+  - url: http://{host}
+    description: Local development
+    variables:
+      host:
+        default: localhost:10000
+
+tags:
+  - name: Health
+  - name: Quizzes
+  - name: Results
+  - name: System
+
+# Default security: everything requires Bearer except operations that override with `security: []`
+security:
+  - BearerAuth: []
+
+paths:
+  /api/healthz:
+    get:
+      tags: [Health]
+      summary: Health probe
+      operationId: getHealth
+      security: []   # public
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/quizzes:
+    get:
+      tags: [Quizzes]
+      summary: List quizzes
+      operationId: listQuizzes
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: Paged list of quizzes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/QuizSummary" }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  total: { type: integer }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        default: { $ref: "#/components/responses/Error" }
+    post:
+      tags: [Quizzes]
+      summary: Create quiz
+      operationId: createQuiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/QuizCreate" }
+      responses:
+        "201":
+          description: Quiz created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Quiz" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /api/quizzes/{id}:
+    get:
+      tags: [Quizzes]
+      summary: Get quiz by id
+      operationId: getQuizById
+      parameters:
+        - $ref: "#/components/parameters/QuizId"
+      responses:
+        "200":
+          description: Quiz
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Quiz" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /api/quizzes/{id}/answer-key:
+    get:
+      tags: [Quizzes]
+      summary: Get quiz answer key
+      operationId: getQuizAnswerKey
+      parameters:
+        - $ref: "#/components/parameters/QuizId"
+      responses:
+        "200":
+          description: Answer key
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AnswerKeyItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /api/results:
+    get:
+      tags: [Results]
+      summary: List results for a user
+      operationId: listResultsForUser
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema: { $ref: "#/components/schemas/ObjectId" }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: Results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/QuizResult" }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  total: { type: integer }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /api/results/grade:
+    post:
+      tags: [Results]
+      summary: Grade a submission
+      operationId: gradeSubmission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GradeSubmission" }
+      responses:
+        "200":
+          description: Graded result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuizResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Error" }
+
+  /api/seed/status:
+    get:
+      tags: [System]
+      summary: Seed status snapshot
+      operationId: getSeedStatus
+      security: []   # public
+      parameters:
+        - in: query
+          name: detail
+          description: Include sample quiz and latest result when 1
+          schema: { type: integer, enum: [0, 1], default: 0 }
+      responses:
+        "200":
+          description: Status snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedStatus"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        default: { $ref: "#/components/responses/Error" }
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    QuizId:
+      in: path
+      name: id
+      required: true
+      schema: { $ref: "#/components/schemas/ObjectId" }
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ServiceUnavailable:
+      description: Service unavailable
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    ObjectId:
+      type: string
+      pattern: "^[a-f0-9]{24}$"
+      example: "68de870887b9771ecca73b92"
+
+    Error:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              instancePath: { type: string }
+              keyword: { type: string }
+              message: { type: string }
+              params: { type: object }
+      required: [success, message]
+
+    Health:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        dbReady: { type: integer, example: 1 }
+        uptime: { type: number, example: 123.45 }
+      required: [ok, dbReady, uptime]
+
+    QuizSummary:
+      type: object
+      properties:
+        _id: { $ref: "#/components/schemas/ObjectId" }
+        title: { type: string }
+        updatedAt: { type: string, format: date-time }
+      required: [_id, title]
+
+    Quiz:
+      type: object
+      properties:
+        _id: { $ref: "#/components/schemas/ObjectId" }
+        title: { type: string }
+        settings:
+          type: object
+          additionalProperties: false
+          properties:
+            timeLimitSec: { type: integer, minimum: 0 }
+            shuffle: { type: boolean }
+            attempts: { type: integer, minimum: 1 }
+        questions:
+          type: array
+          items: { $ref: "#/components/schemas/Question" }
+        updatedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+      required: [title, questions]
+
+    QuizCreate:
+      allOf:
+        - $ref: "#/components/schemas/Quiz"
+      required: [title, questions]
+      description: Payload used to create a quiz
+
+    Question:
+      type: object
+      additionalProperties: false
+      properties:
+        _id: { $ref: "#/components/schemas/ObjectId" }
+        prompt: { type: string }
+        type:
+          type: string
+          enum: [single, multi, short, numeric]
+        points: { type: integer, minimum: 0 }
+        options:
+          type: array
+          items: { $ref: "#/components/schemas/Option" }
+        meta:
+          type: object
+          additionalProperties: true
+      required: [prompt, type, points]
+
+    Option:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        text: { type: string }
+        correct:
+          type: boolean
+          description: Present only in answer key responses
+      required: [id, text]
+
+    AnswerKeyItem:
+      type: object
+      additionalProperties: false
+      properties:
+        questionId: { $ref: "#/components/schemas/ObjectId" }
+        type: { type: string, enum: [single, multi, short, numeric] }
+        points: { type: integer, minimum: 0 }
+        meta:
+          type: object
+          additionalProperties: true
+        correct:
+          type: array
+          items:
+            type: string
+      required: [questionId, type, points, correct]
+
+    GradeSubmission:
+      type: object
+      additionalProperties: false
+      properties:
+        quizId: { $ref: "#/components/schemas/ObjectId" }
+        userId: { $ref: "#/components/schemas/ObjectId" }
+        answers:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              questionId: { $ref: "#/components/schemas/ObjectId" }
+              selected:
+                type: array
+                items: { type: string }
+              input:
+                oneOf:
+                  - { type: string }
+                  - { type: number }
+            allOf:
+              - anyOf:
+                  - required: [selected]
+                  - required: [input]
+            required: [questionId]
+      required: [quizId, userId, answers]
+
+    QuizResult:
+      type: object
+      additionalProperties: false
+      properties:
+        _id: { $ref: "#/components/schemas/ObjectId" }
+        quizId: { $ref: "#/components/schemas/ObjectId" }
+        userId: { $ref: "#/components/schemas/ObjectId" }
+        score: { type: number }
+        percentage: { type: number }
+        correctCount: { type: integer }
+        totalCount: { type: integer }
+        submittedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        breakdown:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              questionId: { $ref: "#/components/schemas/ObjectId" }
+              correct: { type: boolean }
+              awarded: { type: number }
+              selected:
+                type: array
+                items: { type: string }
+              input:
+                oneOf:
+                  - { type: string, nullable: true }
+                  - { type: number, nullable: true }
+            required: [questionId, correct]
+      required: [quizId, userId, score, percentage, totalCount, submittedAt]
+
+    SeedStatus:
+      type: object
+      properties:
+        success: { type: boolean }
+        env: { type: string }
+        db:
+          type: object
+          properties:
+            name: { type: string }
+            host: { type: string }
+            readyState: { type: integer }
+        counts:
+          type: object
+          properties:
+            courses: { type: integer }
+            quizzes: { type: integer }
+            results: { type: integer }
+        latest:
+          type: object
+          properties:
+            course:
+              type: object
+              nullable: true
+              properties:
+                _id: { $ref: "#/components/schemas/ObjectId" }
+                title: { type: string }
+                updatedAt: { type: string, format: date-time }
+            quiz:
+              type: object
+              nullable: true
+              properties:
+                _id: { $ref: "#/components/schemas/ObjectId" }
+                title: { type: string }
+                updatedAt: { type: string, format: date-time }
+            result:
+              type: object
+              nullable: true
+              properties:
+                _id: { $ref: "#/components/schemas/ObjectId" }
+                submittedAt: { type: string, format: date-time }
+                updatedAt: { type: string, format: date-time }
+        sample:
+          type: object
+          properties:
+            quiz: { $ref: "#/components/schemas/Quiz" }
+            result: { $ref: "#/components/schemas/QuizResult" }

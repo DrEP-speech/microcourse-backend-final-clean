@@ -1,0 +1,4 @@
+env,email,password
+local,test@example.com,Passw0rd!
+staging,staging.user@example.com,changeMe123!
+prod,prod.user@example.com,changeMe123!

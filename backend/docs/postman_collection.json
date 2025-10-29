@@ -1,0 +1,18 @@
+﻿{
+  "info": {
+    "name": "MicroCourse - Core",
+    "_postman_id": "00000000-0000-0000-0000-000000000000",
+    "description": "Core collection for health & basic endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    { "name": "Healthz", "request": { "method": "GET", "url": "{{BASE}}/healthz" } },
+    { "name": "API Health", "request": { "method": "GET", "url": "{{API}}/health" } },
+    { "name": "Courses", "request": { "method": "GET", "url": "{{API}}/courses" } },
+    { "name": "Quizzes", "request": { "method": "GET", "url": "{{API}}/quizzes" } }
+  ],
+  "variable": [
+    { "key": "BASE", "value": "http://localhost:10000" },
+    { "key": "API", "value": "http://localhost:10000/api" }
+  ]
+}

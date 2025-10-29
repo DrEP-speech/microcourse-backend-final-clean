@@ -1,0 +1,117 @@
+﻿openapi: 3.0.3
+info:
+  title: Microcourse API
+  version: "1.0.0"
+servers:
+  - url: http://localhost:10000
+paths:
+  /api/healthz:
+    get:
+      summary: Health probe
+      responses:
+        "200": { description: OK }
+  /api/quizzes:
+    get:
+      summary: List quizzes
+      responses: { "200": { description: OK } }
+    post:
+      summary: Create quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Quiz" }
+      responses: { "201": { description: Created } }
+  /api/quizzes/{id}:
+    get:
+      summary: Get quiz by id
+      parameters:
+        - in: path; name: id; required: true; schema: { type: string }
+      responses: { "200": { description: OK } }
+  /api/quizzes/{id}/answer-key:
+    get:
+      summary: Get quiz answer key
+      parameters:
+        - in: path; name: id; required: true; schema: { type: string }
+      responses: { "200": { description: OK } }
+  /api/results:
+    get:
+      summary: List results for a user
+      parameters:
+        - in: query; name: userId; required: true; schema: { type: string }
+      responses: { "200": { description: OK } }
+  /api/results/grade:
+    post:
+      summary: Grade a submission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GradeRequest" }
+      responses: { "200": { description: OK } }
+  /api/seed/status:
+    get:
+      summary: Seed status
+      parameters:
+        - in: query; name: detail; schema: { type: string }
+      responses: { "200": { description: OK } }
+components:
+  schemas:
+    Option:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: [string, number] }
+        text: { type: string }
+        correct: { type: boolean }
+      required: [id, text]
+    Question:
+      type: object
+      additionalProperties: false
+      properties:
+        _id: { type: string }
+        prompt: { type: string }
+        type: { type: string, enum: [single, multi, short, numeric, truefalse] }
+        points: { type: number }
+        options:
+          type: array
+          items: { $ref: "#/components/schemas/Option" }
+        meta: { type: object }
+      required: [prompt, type]
+    Quiz:
+      type: object
+      additionalProperties: false
+      properties:
+        title: { type: string }
+        courseId: { type: string }
+        questions:
+          type: array
+          items: { $ref: "#/components/schemas/Question" }
+        settings:
+          type: object
+          properties:
+            timeLimitSec: { type: integer, minimum: 0 }
+            shuffle: { type: boolean }
+            attempts: { type: integer, minimum: 1 }
+      required: [title]
+    GradeRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        quizId: { type: string }
+        userId: { type: string }
+        answers:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              questionId: { type: string }
+              selected:
+                type: array
+                items: { type: [string, number] }
+              input: { type: [string, number, "null"] }
+            anyOf:
+              - required: [questionId, selected]
+              - required: [questionId, input]
+      required: [quizId, userId, answers]

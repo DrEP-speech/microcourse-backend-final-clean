@@ -1,0 +1,16 @@
+﻿{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://microcourse.ai/schemas/notification.json",
+  "type":"object",
+  "required":["userId","type","message","read","createdAt"],
+  "properties": {
+    "_id": { "type":"string" },
+    "userId": { "type":"string" },
+    "type": { "type":"string" },
+    "message": { "type":"string" },
+    "read": { "type":"boolean" },
+    "createdAt": { "type":"string","format":"date-time" },
+    "meta": {}
+  },
+  "additionalProperties": false
+}

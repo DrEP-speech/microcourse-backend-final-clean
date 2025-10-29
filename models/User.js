@@ -1,45 +1,34 @@
-// models/User.js
-import mongoose from 'mongoose';
+"use strict";
 
-const { Schema, model } = mongoose;
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
-const UserSchema = new Schema(
+const userSchema = new mongoose.Schema(
   {
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-      lowercase: true,
-      trim: true,
-    },
-    passwordHash: {
-      type: String,
-      required: true,
-    },
-    name: {
-      type: String,
-      default: '',
-      trim: true,
-    },
-    role: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
-      index: true,
-    },
+    email: { type: String, required: true, trim: true, lowercase: true },
+    password: { type: String, required: true, select: false },
+    role: { type: String, enum: ["owner", "therapist", "parent", "admin", "user"], default: "user" },
+    profile: { type: mongoose.Schema.Types.Mixed, default: {} }
   },
   { timestamps: true }
 );
 
-// Hide internal fields + password hash when serializing
-UserSchema.set('toJSON', {
-  transform(_doc, ret) {
-    ret.id = ret._id;
-    delete ret._id;
-    delete ret.__v;
-    delete ret.passwordHash;
-  },
+// Define the *single* unique index for email with a stable name
+userSchema.index({ email: 1 }, { unique: true, name: "uniq_email" });
+
+// Hash on create/change
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
-export default model('User', UserSchema);
+// Hide password in JSON
+userSchema.set("toJSON", {
+  transform(_doc, ret) {
+    delete ret.password;
+    return ret;
+  }
+});
+
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);

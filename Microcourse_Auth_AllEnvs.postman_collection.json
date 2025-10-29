@@ -1,0 +1,261 @@
+{
+  "info": {
+    "_postman_id": "microcourse-auth-local",
+    "name": "Microcourse Auth (Local)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Auth workflow for Microcourse backend: health, login, refresh (cookie & header), me, logout."
+  },
+  "item": [
+    {
+      "name": "🩺 Health (API)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "🩺 Health (root)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{rootUrl}}/healthz",
+          "host": [
+            "{{rootUrl}}"
+          ],
+          "path": [
+            "healthz"
+          ]
+        }
+      }
+    },
+    {
+      "name": "🔑 Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let json = {};",
+              "try { json = pm.response.json(); } catch(e) {}",
+              "if (json && json.success) {",
+              "  if (json.token) pm.collectionVariables.set('accessToken', json.token);",
+              "  if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "♻️ Refresh (cookie-based)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        }
+      }
+    },
+    {
+      "name": "♻️ Refresh (header x-refresh)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-refresh",
+            "value": "{{refreshToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let json = {};",
+              "try { json = pm.response.json(); } catch(e) {}",
+              "if (json && json.success && json.accessToken) {",
+              "  pm.collectionVariables.set('accessToken', json.accessToken);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 Me (Bearer access token)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      }
+    },
+    {
+      "name": "🚪 Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-refresh",
+            "value": "{{refreshToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "rootUrl",
+      "value": "http://localhost:10000"
+    },
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:10000/api"
+    },
+    {
+      "key": "email",
+      "value": "test@example.com"
+    },
+    {
+      "key": "password",
+      "value": "Passw0rd!"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "let env = pm.environment.get('env') || 'local';",
+          "",
+          "let rootKey = 'rootUrl_' + env;",
+          "let baseKey = 'baseUrl_' + env;",
+          "",
+          "let rootUrl = pm.environment.get(rootKey);",
+          "let baseUrl = pm.environment.get(baseKey);",
+          "",
+          "if (rootUrl && baseUrl) {",
+          "    pm.environment.set('rootUrl', rootUrl);",
+          "    pm.environment.set('baseUrl', baseUrl);",
+          "    console.log(`Environment switched to: ${env}`);",
+          "} else {",
+          "    console.warn(`Unknown env '${env}' — check your environment variables`);",
+          "}"
+        ]
+      }
+    }
+  ]
+}

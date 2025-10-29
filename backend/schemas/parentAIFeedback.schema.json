@@ -1,0 +1,14 @@
+﻿{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://microcourse.ai/schemas/parentAIFeedback.json",
+  "type":"object",
+  "required":["childId","createdAt","feedback"],
+  "properties": {
+    "_id": { "type":"string" },
+    "childId": { "type":"string" },
+    "createdAt": { "type":"string","format":"date-time" },
+    "feedback": { "type":"string" },
+    "insights": { "type":"array", "items": { "type":"string" } }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,5 @@
+{
+  "watch": ["server.js", "storage.js", "uploads.js", "openapi.js", "auth.js", "models/*.js", "data/*.json", ".env"],
+  "ext": "js,json,env",
+  "ignore": ["node_modules"]
+}

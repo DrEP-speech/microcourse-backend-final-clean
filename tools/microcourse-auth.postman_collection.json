@@ -1,0 +1,58 @@
+{
+  "info": {
+    "name": "Microcourse Auth E2E (raw-only URLs)",
+    "_postman_id": "0c5c2f2e-35a6-46d0-b20a-0d02ab3b0e9a",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Login + whoami smoke tests (no host/path arrays)."
+  },
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+        "url": { "raw": "{{baseUrl}}{{authBase}}/login" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "let json={}; try{ json = pm.response.json(); }catch(e){}",
+            "pm.environment.set('token', json.token || '');",
+            "pm.test('Login returned token', function(){ pm.expect(json.token).to.be.a('string'); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "WhoAmI",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}{{authBase}}/whoami" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "const json = pm.response.json();",
+            "pm.test('whoami success true', function(){",
+            "  pm.expect(json.success).to.eql(true);",
+            "  pm.expect(json.user).to.be.an('object');",
+            "});"
+          ]
+        }
+      }]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl",  "value": "http://localhost:10003" },
+    { "key": "authBase", "value": "/api/auth" },
+    { "key": "email",    "value": "owner@example.com" },
+    { "key": "password", "value": "passw0rd" },
+    { "key": "token",    "value": "" }
+  ]
+}

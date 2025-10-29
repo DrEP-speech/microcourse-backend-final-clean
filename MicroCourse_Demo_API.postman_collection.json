@@ -1,0 +1,97 @@
+{
+  "info": {
+    "name": "MicroCourse Demo API",
+    "_postman_id": "7f2d7f1f-0000-4b00-9000-demoapi",
+    "description": "Health + demo lesson assets (file-persisted) with Bearer auth on write routes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Create Asset (POST) — Bearer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  if (json && json.item && json.item.id) {",
+              "    pm.environment.set('assetId', json.item.id);",
+              "  }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}"},
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"video\",\n  \"url\": \"https://example.com/fractions.mp4\",\n  \"title\": \"Fractions — Intro\"\n}"
+        },
+        "url": "{{baseUrl}}/api/lessons/demo/assets"
+      }
+    },
+    {
+      "name": "List Assets (GET)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/lessons/demo/assets"
+      }
+    },
+    {
+      "name": "Lesson Summary (GET)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/lessons/demo"
+      }
+    },
+    {
+      "name": "Update Asset (PUT) — Bearer",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}"},
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Fractions — Updated Intro\"\n}"
+        },
+        "url": "{{baseUrl}}/api/lessons/demo/assets/{{assetId}}"
+      }
+    },
+    {
+      "name": "Delete Asset (DELETE) — Bearer",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "url": "{{baseUrl}}/api/lessons/demo/assets/{{assetId}}"
+      }
+    },
+    {
+      "name": "Clear All Assets (DELETE) — Bearer",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}"}
+        ],
+        "url": "{{baseUrl}}/api/lessons/demo/assets"
+      }
+    }
+  ]
+}

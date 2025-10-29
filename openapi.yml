@@ -1,0 +1,140 @@
+openapi: 3.0.3
+info:
+  title: Microcourse Auth API
+  version: 1.0.0
+servers:
+  - url: http://localhost:10000/api
+paths:
+  /auth/login:
+    post:
+      summary: Login with email/password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Login ok
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refreshToken=...; Path=/api/auth/refresh; HttpOnly; SameSite=Lax; Max-Age=2592000
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/refresh:
+    post:
+      summary: Issue new access token (via cookie or header)
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: Refreshed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RefreshResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/me:
+    get:
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/logout:
+    post:
+      summary: Logout (invalidate refresh)
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BasicOk' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    BasicOk:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+
+    Error:
+      type: object
+      required: [success, code, message]
+      properties:
+        success: { type: boolean, example: false }
+        code:    { type: string, example: REQUEST_ERROR }
+        message: { type: string, example: "Invalid credentials" }
+
+    UserPublic:
+      type: object
+      properties:
+        id: { type: string, example: 68c2454c145409bad93ad36c }
+        email: { type: string, format: email }
+        name: { type: string }
+        role: { type: string, enum: [user, admin, tester] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: test@example.com }
+        password: { type: string, minLength: 8, example: Passw0rd! }
+
+    LoginResponse:
+      type: object
+      required: [success, token]
+      properties:
+        success: { type: boolean, example: true }
+        token:
+          type: string
+          description: Access JWT (short-lived)
+        user:
+          $ref: '#/components/schemas/UserPublic'
+
+    RefreshResponse:
+      type: object
+      required: [success, token]
+      properties:
+        success: { type: boolean, example: true }
+        token:
+          type: string
+          description: New access JWT (short-lived)
+
+    MeResponse:
+      type: object
+      required: [success, user]
+      properties:
+        success: { type: boolean, example: true }
+        user:
+          $ref: '#/components/schemas/UserPublic'

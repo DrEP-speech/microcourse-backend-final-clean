@@ -1,0 +1,17 @@
+﻿{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://microcourse.ai/schemas/auditLog.json",
+  "type":"object",
+  "required":["entity","entityId","action","ts"],
+  "properties": {
+    "_id": { "type":"string" },
+    "entity": { "type":"string" },
+    "entityId": { "type":"string" },
+    "actorId": { "type":"string" },
+    "action": { "type":"string" },
+    "ts": { "type":"string","format":"date-time" },
+    "details": {},
+    "severity": { "enum":["info","warning","critical"] }
+  },
+  "additionalProperties": false
+}

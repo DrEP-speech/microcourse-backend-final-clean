@@ -1,0 +1,180 @@
+{
+  "info": {
+    "name": "Microcourse Auth (Local) – With Signup",
+    "_postman_id": "3c0c8a44-3b2c-4f9d-9f60-12ab34cd56ef",
+    "description": "Idempotent Signup ? Login ? Refresh ? Me ? Logout flow (pm.execution.setNextRequest)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0) Signup (idempotent)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"name\": \"Test User\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "signup"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const res = pm.response;",
+              "let json = {};",
+              "try { json = res.json(); } catch (e) {}",
+              "pm.test('Signup responded', () => {",
+              "  pm.expect([200, 201, 400, 409, 404]).to.include(res.code);",
+              "});",
+              "if (json && (json.accessToken || (json.data && json.data.accessToken))) {",
+              "  pm.environment.set('accessToken', json.accessToken || json.data.accessToken);",
+              "  if (json.refreshToken || (json.data && json.data.refreshToken)) {",
+              "    pm.environment.set('refreshToken', json.refreshToken || json.data.refreshToken);",
+              "  }",
+              "  pm.execution.setNextRequest('3) Me');",
+              "} else {",
+              "  pm.execution.setNextRequest('1) Login (Flow)');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "1) Login (Flow)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login succeeded', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const json = pm.response.json();",
+              "  pm.environment.set('accessToken', json.accessToken || (json.data && json.data.accessToken) || '');",
+              "  pm.environment.set('refreshToken', json.refreshToken || (json.data && json.data.refreshToken) || '');",
+              "});",
+              "pm.execution.setNextRequest('2) Refresh (header)');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2) Refresh (header)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-refresh-token", "value": "{{refreshToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "refresh"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Header refresh succeeded', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const json = pm.response.json();",
+              "  if (json.accessToken || (json.data && json.data.accessToken)) {",
+              "    pm.environment.set('accessToken', json.accessToken || json.data.accessToken);",
+              "  }",
+              "});",
+              "pm.execution.setNextRequest('3) Me');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3) Me",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "me"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Me returned success:user', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.success).to.eql(true);",
+              "});",
+              "pm.execution.setNextRequest('4) Logout');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4) Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/logout",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "logout"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Logout returned success', () => {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.environment.set('accessToken','');",
+              "pm.environment.set('refreshToken','');"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

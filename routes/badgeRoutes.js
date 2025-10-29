@@ -1,14 +1,11 @@
-import express from 'express';
-import { listBadges, createBadge, awardBadge, syncBadge, deleteBadge } from '../controllers/badgeController.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
-
+import express from "express";
 const router = express.Router();
 
-router.get('/', listBadges);
-router.post('/', requireAuth, requireRole('admin'), createBadge);
-router.delete('/:id', requireAuth, requireRole('admin'), deleteBadge);
-
-router.post('/award', requireAuth, awardBadge);
-router.post('/sync', requireAuth, syncBadge);
+// examples – match your handlers
+router.get("/", listBadges);
+router.post("/", requireAdmin, createBadge);
+router.delete("/:id", requireAdmin, deleteBadge);
+router.post("/award", requireAdmin, awardBadge);
+router.post("/sync", requireAdmin, syncBadges);
 
 export default router;

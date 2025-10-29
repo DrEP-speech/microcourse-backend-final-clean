@@ -1,0 +1,81 @@
+{
+  "item": [
+    {
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let json={}; try{ json = pm.response.json(); }catch(e){}",
+              "pm.environment.set('token', json.token || '');",
+              "pm.test('Login returned token', function(){ pm.expect(json.token).to.be.a('string'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "header": [
+          {
+            "value": "application/json",
+            "key": "Content-Type"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:10003/api/auth/login"
+        },
+        "method": "POST",
+        "body": {
+          "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"passw0rd\"\n}",
+          "mode": "raw"
+        }
+      },
+      "name": "Login"
+    },
+    {
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.test('whoami success true', function(){ pm.expect(json.success).to.eql(true); });",
+              "pm.test('whoami returns user object', function(){ pm.expect(json.user).to.be.an('object'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{token}}",
+            "disabled": true
+          },
+          {
+            "value": "Bearer {{token}}",
+            "key": "Authorization"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:10003/api/auth/whoami"
+        },
+        "method": "GET"
+      },
+      "name": "WhoAmI"
+    }
+  ],
+  "variable": [
+    {
+      "value": "",
+      "key": "token"
+    }
+  ],
+  "info": {
+    "_postman_id": "755076d5-b4dc-449d-8410-3fee7cbaf643",
+    "description": "Login + whoami smoke tests (raw URLs, no host/path arrays).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "name": "Microcourse Auth E2E (raw-only URLs)"
+  }
+}

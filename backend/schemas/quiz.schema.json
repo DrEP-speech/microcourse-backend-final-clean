@@ -1,0 +1,47 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quiz.schema.json",
+  "title": "Quiz",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "questions"],
+  "properties": {
+    "title": { "type": "string", "minLength": 1 },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeLimitSec": { "type": "integer", "minimum": 0 },
+        "shuffle": { "type": "boolean" },
+        "attempts": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["prompt", "type", "points"],
+        "properties": {
+          "prompt": { "type": "string" },
+          "type": { "type": "string", "enum": ["single", "multi", "short", "numeric"] },
+          "points": { "type": "integer", "minimum": 0 },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "text"],
+              "properties": {
+                "id": { "type": "string" },
+                "text": { "type": "string" }
+              }
+            }
+          },
+          "meta": { "type": "object", "additionalProperties": true }
+        }
+      }
+    }
+  }
+}

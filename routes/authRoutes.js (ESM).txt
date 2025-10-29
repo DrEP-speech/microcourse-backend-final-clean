@@ -1,0 +1,51 @@
+// routes/authRoutes.js (ESM)
+import crypto from 'crypto';
+import express from 'express';
+import { validate } from '../middleware/validate.js';
+import { signupSchema, loginSchema } from '../validations/authSchemas.js';
+import { requireAuth } from '../middleware/requireAuth.js';
+import { issueCsrf, requireCsrf } from '../middleware/requireCsrf.js';
+import { signup, login, me, refresh, logoutEverywhere } from '../controllers/authController.js';
+
+const router = express.Router();
+
+// Optional: local debug route -> POST /api/auth/_debug/echo
+router.post('/_debug/echo', (req, res) => {
+  console.log('DEBUG (router) echo body:', req.body);
+  res.json({ ok: true, body: req.body ?? null });
+});
+
+export function issueCsrf(req, res) {
+  const token = crypto.randomBytes(24).toString('hex');
+  res.cookie('csrfToken', token, { httpOnly: false, sameSite: 'lax' });
+  res.set('x-csrf-token', token);
+  res.json({ token });
+}
+
+export function requireCsrf(req, res, next) {
+  const header = req.headers['x-csrf-token'];
+  const cookie = req.cookies?.csrfToken;
+  if (!header || !cookie || header !== cookie) {
+    return res.status(403).json({ success: false, message: 'Invalid CSRF token' });
+  }
+  next();
+}
+
+// CSRF token + cookie
+router.get('/csrf', issueCsrf);
+router.get('/me', requireAuth, meCtrl);
+router.get('/whoami', requireAuth, meCtrl);
+router.post('/_debug/echo', (req, res) => res.json({ ok: true, body: req.body ?? null }));
+
+// Public but CSRF-protected
+router.post('/signup', validate(signupSchema), requireCsrf, signup);
+router.post('/login',  validate(loginSchema),  requireCsrf, login);
+
+// Authenticated
+router.get('/me', requireAuth, me);
+
+// Refresh + global logout
+router.post('/refresh',          requireCsrf, refresh);
+router.post('/logout-everywhere', requireAuth, requireCsrf, logoutEverywhere);
+
+export default router;

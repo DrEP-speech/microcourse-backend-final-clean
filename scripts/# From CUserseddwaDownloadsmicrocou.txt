@@ -1,0 +1,112 @@
+# From: C:\Users\eddwa\Downloads\microcourse-backend-final-clean
+New-Item -ItemType Directory -Force .\scripts\pwsh | Out-Null
+
+@'
+#Requires -Version 7
+Set-StrictMode -Version Latest
+function Invoke-WithRetry {
+  [CmdletBinding(SupportsShouldProcess)]
+  param(
+    [Parameter(Mandatory)][string]$Url,
+    [ValidateSet('GET','POST','PUT','PATCH','DELETE')][string]$Method = 'GET',
+    [hashtable]$Headers,
+    [object]$Body,
+    [int]$MaxRetries = 5,
+    [int]$DelaySeconds = 2,
+    [int]$TimeoutSec = 30
+  )
+  $attempt = 0
+  do {
+    try {
+      $attempt++
+      $p = @{ Uri=$Url; Method=$Method; TimeoutSec=$TimeoutSec; ErrorAction='Stop' }
+      if ($Headers) { $p.Headers = $Headers }
+      if ($PSBoundParameters.ContainsKey('Body')) {
+        $p.ContentType = 'application/json'
+        $p.Body = ($Body -is [string]) ? $Body : (ConvertTo-Json $Body -Depth 10)
+      }
+      return Invoke-RestMethod @p
+    } catch {
+      if ($attempt -ge $MaxRetries) { throw }
+      Start-Sleep -Seconds ([math]::Min($DelaySeconds * [math]::Pow(2, $attempt-1), 30))
+    }
+  } while ($true)
+}
+'@ | Set-Content .\scripts\pwsh\Invoke-WithRetry.ps1 -NoNewline
+
+@'
+#Requires -Version 7
+Set-StrictMode -Version Latest
+[CmdletBinding()]
+param(
+  [string]$BackendPath = "./microcourse-backend",
+  [string]$FrontendPath = "./microcourse-frontend",
+  [string[]]$BackendHealthCandidates = @(
+    "http://localhost:10000/healthz",
+    "http://localhost:10000/health",
+    "http://localhost:10000/api/healthz",
+    "http://localhost:10000/api/health"
+  ),
+  [string[]]$FrontendCandidates = @("http://localhost:3000","http://localhost:5173","http://localhost:5174"),
+  [switch]$OpenBrowser,
+  [switch]$SkipFrontend
+)
+
+. "$PSScriptRoot/Invoke-WithRetry.ps1"
+
+function Resolve-Or-Fallback {
+  param([string]$Primary,[string[]]$Fallbacks)
+  if (Test-Path $Primary) { return (Resolve-Path $Primary).Path }
+  foreach ($f in $Fallbacks) { if (Test-Path $f) { return (Resolve-Path $f).Path } }
+  return $null
+}
+
+$backendResolved  = Resolve-Or-Fallback $BackendPath  @("./microcourse-backend-final-clean",".")
+$frontendResolved = $null
+if (-not $backendResolved) { throw "BackendPath '$BackendPath' not found. If you're in the backend folder, use -BackendPath '.'" }
+if (-not $SkipFrontend) {
+  $frontendResolved = Resolve-Or-Fallback $FrontendPath @(
+    "./microcourse-frontend","./microcourse-frontend-clean/microcourse-frontend","../microcourse-frontend","../microcourse-frontend-clean/microcourse-frontend"
+  )
+  if (-not $frontendResolved) { Write-Warning "Frontend not found; continuing backend-only."; $SkipFrontend = $true }
+}
+
+$cmd = (Get-Command cmd.exe -ErrorAction Stop).Source
+Write-Host "🟩 Backend dir : $backendResolved"
+if (-not $SkipFrontend) { Write-Host "🟩 Frontend dir: $frontendResolved" }
+
+$backend  = Start-Process -FilePath $cmd -ArgumentList "/c npm start"   -WorkingDirectory $backendResolved  -PassThru
+Start-Sleep -Seconds 2
+if (-not $SkipFrontend) {
+  $frontend = Start-Process -FilePath $cmd -ArgumentList "/c npm run dev" -WorkingDirectory $frontendResolved -PassThru
+}
+
+$healthyUrl = $null
+foreach ($u in $BackendHealthCandidates) {
+  try { Write-Host "⏳ Checking $u ..."; Invoke-WithRetry -Url $u -MaxRetries 6 -DelaySeconds 1 | Out-Null; $healthyUrl=$u; break } catch { }
+}
+if ($healthyUrl) { Write-Host "✅ Backend healthy at $healthyUrl" } else { Write-Warning "Backend not healthy yet (tried: $($BackendHealthCandidates -join ', '))." }
+
+if (-not $SkipFrontend) {
+  $frontUrl = $FrontendCandidates[0]
+  foreach ($fc in $FrontendCandidates) { try { Invoke-WebRequest -Uri $fc -UseBasicParsing -TimeoutSec 2 | Out-Null; $frontUrl=$fc; break } catch { } }
+  Write-Host "🟢 Frontend likely at $frontUrl"
+  if ($OpenBrowser) { Start-Process $frontUrl }
+}
+
+if ($SkipFrontend) { Wait-Process -Id $backend.Id } else { Wait-Process -Id $backend.Id,$frontend.Id }
+'@ | Set-Content .\scripts\pwsh\Start-Stack.ps1 -NoNewline
+
+@'
+#Requires -Version 7
+Set-StrictMode -Version Latest
+[CmdletBinding()] param([Parameter(Mandatory)][int]$Port)
+$tcp = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
+if ($null -eq $tcp) { Write-Host "✅ Port $Port is already free."; return }
+$owners = $tcp | Where-Object { $_.OwningProcess } | Select-Object -ExpandProperty OwningProcess -Unique
+foreach ($pid in $owners) {
+  try { Stop-Process -Id $pid -Force -ErrorAction Stop; Write-Host "🔪 Killed PID $pid on port $Port" }
+  catch { Write-Warning "Could not kill PID $pid ($($_.Exception.Message))" }
+}
+Write-Host "✅ Port $Port freed."
+'@ | Set-Content .\scripts\pwsh\Free-Port.ps1 -NoNewline

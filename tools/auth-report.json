@@ -1,0 +1,1091 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "755076d5-b4dc-449d-8410-3fee7cbaf643"
+    },
+    "item": [
+      {
+        "id": "633a703a-a929-4e81-8130-307f3504372c",
+        "name": "Login",
+        "request": {
+          "url": {
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"passw0rd\"\n}"
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "8f41fb13-7f30-49d5-844a-b07fbe182f5a",
+              "type": "text/javascript",
+              "exec": [
+                "let json={}; try{ json = pm.response.json(); }catch(e){}",
+                "pm.environment.set('token', json.token || '');",
+                "pm.test('Login returned token', function(){ pm.expect(json.token).to.be.a('string'); });"
+              ],
+              "_lastExecutionId": "c4a6227e-cb27-4ae3-b38d-22fe6a228a6b"
+            }
+          }
+        ]
+      },
+      {
+        "id": "eccc9bd3-0495-4b42-afdd-8b4c9e3a2b6d",
+        "name": "WhoAmI",
+        "request": {
+          "url": {
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "disabled": true,
+              "key": "Authorization",
+              "value": "{{token}}"
+            },
+            {
+              "key": "Authorization",
+              "value": "Bearer {{token}}"
+            }
+          ],
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "602ae37a-841c-413f-8b93-7f712f5394a5",
+              "type": "text/javascript",
+              "exec": [
+                "const json = pm.response.json();",
+                "pm.test('whoami success true', function(){ pm.expect(json.success).to.eql(true); });",
+                "pm.test('whoami returns user object', function(){ pm.expect(json.user).to.be.an('object'); });"
+              ],
+              "_lastExecutionId": "f9755aa8-b748-4a13-a639-c710dc4c679b"
+            }
+          }
+        ]
+      }
+    ],
+    "event": [],
+    "variable": [
+      {
+        "type": "any",
+        "value": "",
+        "key": "token"
+      }
+    ],
+    "info": {
+      "_postman_id": "755076d5-b4dc-449d-8410-3fee7cbaf643",
+      "name": "Microcourse Auth E2E (raw-only URLs)",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Login + whoami smoke tests (raw URLs, no host/path arrays).",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "id": "ba9dbd04-1e57-4b9b-ac15-ea0e27a0fc49",
+    "values": [
+      {
+        "type": "any",
+        "value": "",
+        "key": "token"
+      }
+    ]
+  },
+  "globals": {
+    "id": "cea05521-63f5-4cf2-98ad-69def3c3320c",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 2,
+        "pending": 0,
+        "failed": 1
+      },
+      "prerequests": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 2,
+        "pending": 0,
+        "failed": 2
+      },
+      "tests": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 1,
+        "pending": 0,
+        "failed": 1
+      },
+      "testScripts": {
+        "total": 2,
+        "pending": 0,
+        "failed": 1
+      },
+      "prerequestScripts": {
+        "total": 0,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 0,
+      "responseMin": 0,
+      "responseMax": 0,
+      "responseSd": 0,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1761332785833,
+      "completed": 1761332786059
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 2,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "91f6b4c7-c233-456c-9634-26a184800e41",
+          "httpRequestId": "f17f69da-b528-41f5-8f90-40efa899b18d"
+        },
+        "item": {
+          "id": "633a703a-a929-4e81-8130-307f3504372c",
+          "name": "Login",
+          "request": {
+            "url": {
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"passw0rd\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "8f41fb13-7f30-49d5-844a-b07fbe182f5a",
+                "type": "text/javascript",
+                "exec": [
+                  "let json={}; try{ json = pm.response.json(); }catch(e){}",
+                  "pm.environment.set('token', json.token || '');",
+                  "pm.test('Login returned token', function(){ pm.expect(json.token).to.be.a('string'); });"
+                ],
+                "_lastExecutionId": "c4a6227e-cb27-4ae3-b38d-22fe6a228a6b"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"passw0rd\"\n}"
+          }
+        },
+        "id": "633a703a-a929-4e81-8130-307f3504372c",
+        "requestError": {},
+        "assertions": [
+          {
+            "assertion": "Login returned token",
+            "skipped": false,
+            "error": {
+              "name": "AssertionError",
+              "index": 0,
+              "test": "Login returned token",
+              "message": "expected undefined to be a string",
+              "stack": "AssertionError: expected undefined to be a string\n   at Object.eval sandbox-script.js:1:1)"
+            }
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "d1365183-4c05-469e-acf5-0ee648a91698",
+          "length": 2,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "ec39fc65-07ef-4295-8bbc-2ad91af3ea92"
+        },
+        "item": {
+          "id": "eccc9bd3-0495-4b42-afdd-8b4c9e3a2b6d",
+          "name": "WhoAmI",
+          "request": {
+            "url": {
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "disabled": true,
+                "key": "Authorization",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "602ae37a-841c-413f-8b93-7f712f5394a5",
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('whoami success true', function(){ pm.expect(json.success).to.eql(true); });",
+                  "pm.test('whoami returns user object', function(){ pm.expect(json.user).to.be.an('object'); });"
+                ],
+                "_lastExecutionId": "f9755aa8-b748-4a13-a639-c710dc4c679b"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "disabled": true,
+              "key": "Authorization",
+              "value": ""
+            },
+            {
+              "key": "Authorization",
+              "value": "Bearer "
+            }
+          ],
+          "method": "GET"
+        },
+        "id": "eccc9bd3-0495-4b42-afdd-8b4c9e3a2b6d",
+        "requestError": {},
+        "testScript": [
+          {
+            "error": {
+              "type": "Error",
+              "name": "JSONError",
+              "message": "\"undefined\" is not valid JSON",
+              "checksum": "4db15f4d7d3ae61b799898db95379b99",
+              "id": "a8a116e8-435d-4239-aff7-47bc704a5cdf",
+              "timestamp": 1761332786035,
+              "stacktrace": []
+            }
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 0
+    },
+    "failures": [
+      {
+        "error": {
+          "name": "Error",
+          "message": "runtime:extensions~request: request url is empty",
+          "stack": "Error: runtime:extensions~request: request url is empty\n    at Requester.request (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester.js:421:26)\n    at C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\runner\\extensions\\http-request.command.js:156:37\n    at Requester.create (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester.js:508:16)\n    at RequesterPool.create (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester-pool.js:67:22)\n    at C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\runner\\extensions\\http-request.command.js:105:32\n    at C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:252:13\n    at wrapper (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:273:20)\n    at replenish (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:443:29)\n    at C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:453:13\n    at eachOfLimit (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:479:36)\n    at awaitable (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:212:32)\n    at eachOfSeries (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:815:16)\n    at awaitable (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:212:32)\n    at _asyncMap (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:245:16)\n    at mapSeries (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:839:16)\n    at awaitable (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:212:32)",
+          "checksum": "52f979cd6f180a994a462b2517e8c4f5",
+          "id": "3683550d-970b-467c-b0e3-bb82d6998426",
+          "timestamp": 1761332785893,
+          "stacktrace": [
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester.js",
+              "lineNumber": 421,
+              "functionName": "Requester.request",
+              "typeName": "Requester",
+              "methodName": "request",
+              "columnNumber": 26,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\runner\\extensions\\http-request.command.js",
+              "lineNumber": 156,
+              "functionName": null,
+              "typeName": null,
+              "methodName": null,
+              "columnNumber": 37,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester.js",
+              "lineNumber": 508,
+              "functionName": "Requester.create",
+              "typeName": "Requester",
+              "methodName": "create",
+              "columnNumber": 16,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester-pool.js",
+              "lineNumber": 67,
+              "functionName": "RequesterPool.create",
+              "typeName": "RequesterPool",
+              "methodName": "create",
+              "columnNumber": 22,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\runner\\extensions\\http-request.command.js",
+              "lineNumber": 105,
+              "functionName": null,
+              "typeName": null,
+              "methodName": null,
+              "columnNumber": 32,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 252,
+              "functionName": null,
+              "typeName": null,
+              "methodName": null,
+              "columnNumber": 13,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 273,
+              "functionName": "wrapper",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 20,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 443,
+              "functionName": "replenish",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 29,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 453,
+              "functionName": null,
+              "typeName": null,
+              "methodName": null,
+              "columnNumber": 13,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 479,
+              "functionName": "eachOfLimit",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 36,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 212,
+              "functionName": "awaitable",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 32,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 815,
+              "functionName": "eachOfSeries",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 16,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 212,
+              "functionName": "awaitable",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 32,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 245,
+              "functionName": "_asyncMap",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 16,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 839,
+              "functionName": "mapSeries",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 16,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 212,
+              "functionName": "awaitable",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 32,
+              "native": false
+            }
+          ]
+        },
+        "at": "request",
+        "source": {
+          "id": "633a703a-a929-4e81-8130-307f3504372c",
+          "name": "Login",
+          "request": {
+            "url": {
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"passw0rd\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "8f41fb13-7f30-49d5-844a-b07fbe182f5a",
+                "type": "text/javascript",
+                "exec": [
+                  "let json={}; try{ json = pm.response.json(); }catch(e){}",
+                  "pm.environment.set('token', json.token || '');",
+                  "pm.test('Login returned token', function(){ pm.expect(json.token).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 2,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "91f6b4c7-c233-456c-9634-26a184800e41",
+          "httpRequestId": "f17f69da-b528-41f5-8f90-40efa899b18d"
+        }
+      },
+      {
+        "error": {
+          "name": "AssertionError",
+          "index": 0,
+          "test": "Login returned token",
+          "message": "expected undefined to be a string",
+          "stack": "AssertionError: expected undefined to be a string\n   at Object.eval sandbox-script.js:1:1)",
+          "checksum": "2f1915ab246f8f38a66b89534a36285c",
+          "id": "ff9f55d3-9f84-4d95-9dd6-7c4fc9e24297",
+          "timestamp": 1761332785928,
+          "stacktrace": [
+            {
+              "fileName": "sandbox-script.js",
+              "lineNumber": 1,
+              "functionName": "Object.eval",
+              "typeName": "Object",
+              "methodName": "eval",
+              "columnNumber": 1,
+              "native": false
+            }
+          ]
+        },
+        "at": "assertion:0 in test-script",
+        "source": {
+          "id": "633a703a-a929-4e81-8130-307f3504372c",
+          "name": "Login",
+          "request": {
+            "url": {
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"passw0rd\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "8f41fb13-7f30-49d5-844a-b07fbe182f5a",
+                "type": "text/javascript",
+                "exec": [
+                  "let json={}; try{ json = pm.response.json(); }catch(e){}",
+                  "pm.environment.set('token', json.token || '');",
+                  "pm.test('Login returned token', function(){ pm.expect(json.token).to.be.a('string'); });"
+                ],
+                "_lastExecutionId": "c4a6227e-cb27-4ae3-b38d-22fe6a228a6b"
+              }
+            }
+          ]
+        },
+        "parent": {
+          "_": {
+            "postman_id": "755076d5-b4dc-449d-8410-3fee7cbaf643"
+          },
+          "item": [
+            {
+              "id": "633a703a-a929-4e81-8130-307f3504372c",
+              "name": "Login",
+              "request": {
+                "url": {
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"passw0rd\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "8f41fb13-7f30-49d5-844a-b07fbe182f5a",
+                    "type": "text/javascript",
+                    "exec": [
+                      "let json={}; try{ json = pm.response.json(); }catch(e){}",
+                      "pm.environment.set('token', json.token || '');",
+                      "pm.test('Login returned token', function(){ pm.expect(json.token).to.be.a('string'); });"
+                    ],
+                    "_lastExecutionId": "c4a6227e-cb27-4ae3-b38d-22fe6a228a6b"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "eccc9bd3-0495-4b42-afdd-8b4c9e3a2b6d",
+              "name": "WhoAmI",
+              "request": {
+                "url": {
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "disabled": true,
+                    "key": "Authorization",
+                    "value": "{{token}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "method": "GET"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "602ae37a-841c-413f-8b93-7f712f5394a5",
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "pm.test('whoami success true', function(){ pm.expect(json.success).to.eql(true); });",
+                      "pm.test('whoami returns user object', function(){ pm.expect(json.user).to.be.an('object'); });"
+                    ],
+                    "_lastExecutionId": "f9755aa8-b748-4a13-a639-c710dc4c679b"
+                  }
+                }
+              ]
+            }
+          ],
+          "event": [],
+          "variable": [
+            {
+              "type": "any",
+              "value": "",
+              "key": "token"
+            }
+          ],
+          "info": {
+            "_postman_id": "755076d5-b4dc-449d-8410-3fee7cbaf643",
+            "name": "Microcourse Auth E2E (raw-only URLs)",
+            "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+            "description": {
+              "content": "Login + whoami smoke tests (raw URLs, no host/path arrays).",
+              "type": "text/plain"
+            }
+          }
+        },
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 2,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "91f6b4c7-c233-456c-9634-26a184800e41",
+          "httpRequestId": "f17f69da-b528-41f5-8f90-40efa899b18d",
+          "scriptId": "8f41fb13-7f30-49d5-844a-b07fbe182f5a",
+          "execution": "c4a6227e-cb27-4ae3-b38d-22fe6a228a6b"
+        }
+      },
+      {
+        "error": {
+          "name": "Error",
+          "message": "runtime:extensions~request: request url is empty",
+          "stack": "Error: runtime:extensions~request: request url is empty\n    at Requester.request (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester.js:421:26)\n    at C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\runner\\extensions\\http-request.command.js:156:37\n    at Requester.create (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester.js:508:16)\n    at RequesterPool.create (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester-pool.js:67:22)\n    at C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\runner\\extensions\\http-request.command.js:105:32\n    at C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:252:13\n    at wrapper (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:273:20)\n    at replenish (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:443:29)\n    at C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:453:13\n    at eachOfLimit (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:479:36)\n    at awaitable (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:212:32)\n    at eachOfSeries (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:815:16)\n    at awaitable (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:212:32)\n    at _asyncMap (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:245:16)\n    at mapSeries (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:839:16)\n    at awaitable (C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js:212:32)",
+          "checksum": "52f979cd6f180a994a462b2517e8c4f5",
+          "id": "1d2ace42-e3d7-4eaf-852b-265fbfbf0813",
+          "timestamp": 1761332786014,
+          "stacktrace": [
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester.js",
+              "lineNumber": 421,
+              "functionName": "Requester.request",
+              "typeName": "Requester",
+              "methodName": "request",
+              "columnNumber": 26,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\runner\\extensions\\http-request.command.js",
+              "lineNumber": 156,
+              "functionName": null,
+              "typeName": null,
+              "methodName": null,
+              "columnNumber": 37,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester.js",
+              "lineNumber": 508,
+              "functionName": "Requester.create",
+              "typeName": "Requester",
+              "methodName": "create",
+              "columnNumber": 16,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\requester\\requester-pool.js",
+              "lineNumber": 67,
+              "functionName": "RequesterPool.create",
+              "typeName": "RequesterPool",
+              "methodName": "create",
+              "columnNumber": 22,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\postman-runtime\\lib\\runner\\extensions\\http-request.command.js",
+              "lineNumber": 105,
+              "functionName": null,
+              "typeName": null,
+              "methodName": null,
+              "columnNumber": 32,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 252,
+              "functionName": null,
+              "typeName": null,
+              "methodName": null,
+              "columnNumber": 13,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 273,
+              "functionName": "wrapper",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 20,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 443,
+              "functionName": "replenish",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 29,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 453,
+              "functionName": null,
+              "typeName": null,
+              "methodName": null,
+              "columnNumber": 13,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 479,
+              "functionName": "eachOfLimit",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 36,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 212,
+              "functionName": "awaitable",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 32,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 815,
+              "functionName": "eachOfSeries",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 16,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 212,
+              "functionName": "awaitable",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 32,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 245,
+              "functionName": "_asyncMap",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 16,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 839,
+              "functionName": "mapSeries",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 16,
+              "native": false
+            },
+            {
+              "fileName": "C:\\Users\\eddwa\\Downloads\\microcourse-backend-final-clean\\node_modules\\async\\dist\\async.js",
+              "lineNumber": 212,
+              "functionName": "awaitable",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 32,
+              "native": false
+            }
+          ]
+        },
+        "at": "request",
+        "source": {
+          "id": "eccc9bd3-0495-4b42-afdd-8b4c9e3a2b6d",
+          "name": "WhoAmI",
+          "request": {
+            "url": {
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "disabled": true,
+                "key": "Authorization",
+                "value": ""
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer "
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "602ae37a-841c-413f-8b93-7f712f5394a5",
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('whoami success true', function(){ pm.expect(json.success).to.eql(true); });",
+                  "pm.test('whoami returns user object', function(){ pm.expect(json.user).to.be.an('object'); });"
+                ]
+              }
+            }
+          ]
+        },
+        "cursor": {
+          "ref": "d1365183-4c05-469e-acf5-0ee648a91698",
+          "length": 2,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "ec39fc65-07ef-4295-8bbc-2ad91af3ea92"
+        }
+      },
+      {
+        "error": {
+          "type": "Error",
+          "name": "JSONError",
+          "message": "\"undefined\" is not valid JSON",
+          "checksum": "4db15f4d7d3ae61b799898db95379b99",
+          "id": "a8a116e8-435d-4239-aff7-47bc704a5cdf",
+          "timestamp": 1761332786035,
+          "stacktrace": []
+        },
+        "at": "test-script",
+        "source": {
+          "id": "eccc9bd3-0495-4b42-afdd-8b4c9e3a2b6d",
+          "name": "WhoAmI",
+          "request": {
+            "url": {
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "disabled": true,
+                "key": "Authorization",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "602ae37a-841c-413f-8b93-7f712f5394a5",
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('whoami success true', function(){ pm.expect(json.success).to.eql(true); });",
+                  "pm.test('whoami returns user object', function(){ pm.expect(json.user).to.be.an('object'); });"
+                ],
+                "_lastExecutionId": "f9755aa8-b748-4a13-a639-c710dc4c679b"
+              }
+            }
+          ]
+        },
+        "parent": {
+          "_": {
+            "postman_id": "755076d5-b4dc-449d-8410-3fee7cbaf643"
+          },
+          "item": [
+            {
+              "id": "633a703a-a929-4e81-8130-307f3504372c",
+              "name": "Login",
+              "request": {
+                "url": {
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"passw0rd\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "8f41fb13-7f30-49d5-844a-b07fbe182f5a",
+                    "type": "text/javascript",
+                    "exec": [
+                      "let json={}; try{ json = pm.response.json(); }catch(e){}",
+                      "pm.environment.set('token', json.token || '');",
+                      "pm.test('Login returned token', function(){ pm.expect(json.token).to.be.a('string'); });"
+                    ],
+                    "_lastExecutionId": "c4a6227e-cb27-4ae3-b38d-22fe6a228a6b"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "eccc9bd3-0495-4b42-afdd-8b4c9e3a2b6d",
+              "name": "WhoAmI",
+              "request": {
+                "url": {
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "disabled": true,
+                    "key": "Authorization",
+                    "value": "{{token}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "method": "GET"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "602ae37a-841c-413f-8b93-7f712f5394a5",
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "pm.test('whoami success true', function(){ pm.expect(json.success).to.eql(true); });",
+                      "pm.test('whoami returns user object', function(){ pm.expect(json.user).to.be.an('object'); });"
+                    ],
+                    "_lastExecutionId": "f9755aa8-b748-4a13-a639-c710dc4c679b"
+                  }
+                }
+              ]
+            }
+          ],
+          "event": [],
+          "variable": [
+            {
+              "type": "any",
+              "value": "",
+              "key": "token"
+            }
+          ],
+          "info": {
+            "_postman_id": "755076d5-b4dc-449d-8410-3fee7cbaf643",
+            "name": "Microcourse Auth E2E (raw-only URLs)",
+            "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+            "description": {
+              "content": "Login + whoami smoke tests (raw URLs, no host/path arrays).",
+              "type": "text/plain"
+            }
+          }
+        },
+        "cursor": {
+          "ref": "d1365183-4c05-469e-acf5-0ee648a91698",
+          "length": 2,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "ec39fc65-07ef-4295-8bbc-2ad91af3ea92",
+          "scriptId": "602ae37a-841c-413f-8b93-7f712f5394a5"
+        }
+      }
+    ],
+    "error": null
+  }
+}

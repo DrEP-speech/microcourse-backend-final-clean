@@ -1,0 +1,166 @@
+{
+  "info": {
+    "name": "Microcourse Auth (Local) – No Refresh (Skip Signup)",
+    "_postman_id": "c3b2f9b1-4b7c-4f9e-bb07-1f8b7b9bf111",
+    "description": "Deterministic auth flow for single-token APIs. Skips signup by default; runs Login → Me → Logout. Safe defaults included so runs succeed even with no environment selected.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:10000" },
+    { "key": "email", "value": "mc.e2e.local@mailinator.com" },
+    { "key": "password", "value": "Test1234!" },
+    { "key": "skipSignup", "value": "true" }
+  ],
+  "item": [
+    {
+      "name": "0a) Signup (/register)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"name\": \"Test User\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.variables.get('skipSignup') === 'true') {",
+              "  pm.test('Signup skipped', ()=> true);",
+              "  pm.execution.setNextRequest('1) Login (Flow)');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Signup responded', function () {",
+              "  pm.expect([200,201,400,401,403,409,422,404,405]).to.include(pm.response.code);",
+              "});",
+              "pm.execution.setNextRequest('1) Login (Flow)');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "0b) Signup fallback (/signup)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"name\": \"Test User\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/signup", "host": ["{{baseUrl}}"], "path": ["api","auth","signup"] }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.variables.get('skipSignup') === 'true') {",
+              "  pm.test('Signup skipped', ()=> true);",
+              "  pm.execution.setNextRequest('1) Login (Flow)');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Signup responded', function () {",
+              "  pm.expect([200,201,400,401,403,409,422,404,405]).to.include(pm.response.code);",
+              "});",
+              "pm.execution.setNextRequest('1) Login (Flow)');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "1) Login (Flow)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login succeeded', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const j = pm.response.json();",
+              "  const access = j.token || j.accessToken || j.access_token || (j.data && (j.data.token || j.data.accessToken));",
+              "  pm.expect(!!access, 'token present').to.eql(true);",
+              "  pm.environment.set('accessToken', access);",
+              "});",
+              "pm.execution.setNextRequest('3) Me');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3) Me",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api","auth","me"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Me OK', () => {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.execution.setNextRequest('4) Logout');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4) Logout",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api","auth","logout"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Logout OK', () => {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.environment.set('accessToken','');"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "info": {
+    "name": "Microcourse Auth E2E (ABS)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Login + whoami smoke tests using absolute URLs."
+  },
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "http://localhost:10003/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{""email"":""owner@example.com"",""password"":""passw0rd""}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let json = {}; try { json = pm.response.json(); } catch(e) {}",
+              "pm.environment.set('token', json.token || '');",
+              "pm.test('token is string', function(){ pm.expect(json.token).to.be.a('string'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "WhoAmI",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "http://localhost:10003/api/auth/whoami"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const j = pm.response.json();",
+              "pm.test('whoami success', function(){ pm.expect(j.success).to.eql(true); });",
+              "pm.test('whoami has expected email', function(){ pm.expect(j.user && j.user.email).to.eql('owner@example.com'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": []
+}

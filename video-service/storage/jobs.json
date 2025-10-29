@@ -1,0 +1,82 @@
+{
+  "vj_1c9ca0aa-055c-4756-98ff-04ebc2a3c570": {
+    "id": "vj_1c9ca0aa-055c-4756-98ff-04ebc2a3c570",
+    "lessonId": "demo",
+    "mode": "slides",
+    "script": "Hello class. Today we learn fractions.",
+    "assets": {
+      "brandColor": "#5B7CFA"
+    },
+    "status": "processing",
+    "progress": 10,
+    "fileUrl": null,
+    "captionUrl": null,
+    "createdAt": 1760665820184,
+    "updatedAt": 1760665820202,
+    "error": null
+  },
+  "vj_8ada767f-88bf-4ab6-a095-2135c0feca4e": {
+    "id": "vj_8ada767f-88bf-4ab6-a095-2135c0feca4e",
+    "lessonId": "demo",
+    "mode": "slides",
+    "script": "Hello class. Today we learn fractions.",
+    "assets": {
+      "brandColor": "#5B7CFA"
+    },
+    "status": "processing",
+    "progress": 10,
+    "fileUrl": null,
+    "captionUrl": null,
+    "createdAt": 1760666384225,
+    "updatedAt": 1760666384241,
+    "error": null
+  },
+  "vj_d6bf628c-3457-47ff-878b-55ad90a86c0a": {
+    "id": "vj_d6bf628c-3457-47ff-878b-55ad90a86c0a",
+    "lessonId": "demo",
+    "mode": "slides",
+    "script": "Hello class. Today we learn fractions.",
+    "assets": {
+      "brandColor": "#5B7CFA"
+    },
+    "status": "processing",
+    "progress": 10,
+    "fileUrl": null,
+    "captionUrl": null,
+    "createdAt": 1760669564069,
+    "updatedAt": 1760669564090,
+    "error": null
+  },
+  "vj_76dac386-96a6-45c6-879c-6feedc895b7e": {
+    "id": "vj_76dac386-96a6-45c6-879c-6feedc895b7e",
+    "lessonId": "demo",
+    "mode": "slides",
+    "script": "Hello class. Today we learn fractions.",
+    "assets": {
+      "brandColor": "#5B7CFA"
+    },
+    "status": "done",
+    "progress": 100,
+    "fileUrl": "/videos/slides-e20d16cc-b531-453a-afee-41b554230ee3.mp4",
+    "captionUrl": "/captions/vj_76dac386-96a6-45c6-879c-6feedc895b7e.vtt",
+    "createdAt": 1760671131884,
+    "updatedAt": 1760671132858,
+    "error": null
+  },
+  "vj_42163976-26c7-44ba-a63c-144024d1920a": {
+    "id": "vj_42163976-26c7-44ba-a63c-144024d1920a",
+    "lessonId": "demo",
+    "mode": "slides",
+    "script": "Hello class. Today we learn fractions.",
+    "assets": {
+      "brandColor": "#5B7CFA"
+    },
+    "status": "done",
+    "progress": 100,
+    "fileUrl": "/videos/slides-44edf949-ae63-4021-97cb-d54345baadbf.mp4",
+    "captionUrl": "/captions/vj_42163976-26c7-44ba-a63c-144024d1920a.vtt",
+    "createdAt": 1760671558178,
+    "updatedAt": 1760671558688,
+    "error": null
+  }
+}

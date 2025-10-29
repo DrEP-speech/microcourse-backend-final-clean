@@ -1,0 +1,120 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Microcourse Auth API", "version": "1.0.0" },
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "200": { "description": "Already exists (non-disclosing)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BasicMessage" } } } },
+          "400": { "description": "Invalid input" },
+          "500": { "description": "Register failed" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "401": { "description": "Invalid credentials" },
+          "423": { "description": "Locked" },
+          "400": { "description": "Invalid input" }
+        }
+      }
+    },
+    "/api/auth/whoami": {
+      "get": {
+        "summary": "Current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WhoAmIResponse" } } } },
+          "401": { "description": "Missing/invalid token" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "maxLength": 254 },
+          "password": { "type": "string", "minLength": 6, "maxLength": 200 },
+          "role": { "type": "string", "enum": ["owner", "admin", "user"] }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "maxLength": 254 },
+          "password": { "type": "string", "minLength": 6, "maxLength": 200 }
+        }
+      },
+      "PublicUser": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "type": "string" },
+          "status": { "type": "string" },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "displayName": { "type": "string" },
+              "avatarUrl": { "type": "string" }
+            }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "lastLoginAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "token": { "type": "string" },
+          "expiresIn": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/PublicUser" }
+        }
+      },
+      "WhoAmIResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "user": { "$ref": "#/components/schemas/PublicUser" }
+        }
+      },
+      "BasicMessage": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}

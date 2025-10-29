@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Lint OpenAPI
+        run: npx redocly lint backend/docs/openapi.yaml
+      - name: Build API docs
+        run: npx redocly build-docs backend/docs/openapi.yaml -o public/api-docs.html
+      - name: Upload API docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-docs
+          path: public/api-docs.html

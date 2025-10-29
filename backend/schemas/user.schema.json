@@ -1,0 +1,27 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://microcourse.ai/schemas/user.json",
+  "type": "object",
+  "required": ["email", "name", "role"],
+  "properties": {
+    "_id": { "type": "string" },
+    "email": { "type": "string", "format": "email" },
+    "name": { "type": "string", "minLength": 1 },
+    "role": { "enum": ["student", "instructor", "parent", "admin"] },
+    "avatarUrl": { "type": "string" },
+    "badges": { "type": "array", "items": { "type": "string" } },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "locale": { "type": "string" },
+        "timezone": { "type": "string" },
+        "notificationsEnabled": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "deletedAt": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "additionalProperties": false
+}

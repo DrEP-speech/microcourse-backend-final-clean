@@ -1,0 +1,31 @@
+// DemoAssets.jsx
+import { useEffect, useState } from "react";
+
+export default function DemoAssets() {
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState(null);
+
+  useEffect(() => {
+    fetch("http://localhost:10003/api/lessons/demo")
+      .then(r => r.json())
+      .then(setData)
+      .catch(setErr);
+  }, []);
+
+  if (err) return <pre>Error: {String(err)}</pre>;
+  if (!data) return <div>Loading…</div>;
+
+  const { lesson } = data;
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-semibold">{lesson.title}</h2>
+      <ul className="list-disc pl-6 mt-3">
+        {lesson.assets.map(a => (
+          <li key={a.id}>
+            <b>{a.type.toUpperCase()}</b> — {a.title || a.url}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "db9bcee4-f89b-4cac-bb3b-3b0a807709b1",
+    "lessonId": "demo",
+    "type": "video",
+    "url": "https://example.com/fractions.mp4",
+    "title": "Fractions — Intro",
+    "createdAt": "2025-10-17T23:18:22.907Z"
+  },
+  {
+    "id": "4d8ec2d3-3831-4ecb-aac6-d17d003c44d4",
+    "lessonId": "demo",
+    "type": "pdf",
+    "url": "https://example.com/worksheet.pdf",
+    "title": "Practice Worksheet",
+    "createdAt": "2025-10-17T23:18:24.903Z"
+  },
+  {
+    "id": "619ef624-48ca-4bb0-b72b-48e8d5cacc5d",
+    "lessonId": "demo",
+    "type": "video",
+    "url": "https://example.com/fractions.mp4",
+    "title": "Fractions — Intro",
+    "createdAt": "2025-10-17T23:22:29.478Z"
+  },
+  {
+    "id": "5c177f89-0c92-4f0d-be50-200b9088ffd6",
+    "lessonId": "demo",
+    "type": "video",
+    "url": "https://example.com/part2.mp4",
+    "title": "Fractions — Part 2",
+    "createdAt": "2025-10-17T23:22:29.806Z"
+  },
+  {
+    "id": "b9d76a88-0394-4002-94d7-cc2b629898e1",
+    "lessonId": "demo",
+    "type": "video",
+    "url": "https://example.com/fractions.mp4",
+    "title": "Fractions — Intro",
+    "createdAt": "2025-10-18T03:27:05.609Z"
+  },
+  {
+    "id": "ac8731d3-6192-46b8-9ebf-67b2d6e28d90",
+    "lessonId": "demo",
+    "type": "video",
+    "url": "https://example.com/part2.mp4",
+    "title": "Fractions — Part 2",
+    "createdAt": "2025-10-18T03:27:05.903Z"
+  },
+  {
+    "id": "a9f7fcef-9b66-48e8-90a8-0cd24fd8260e",
+    "lessonId": "demo",
+    "type": "video",
+    "url": "https://example.com/fractions.mp4",
+    "title": "Fractions — Intro",
+    "createdAt": "2025-10-18T03:45:21.748Z"
+  },
+  {
+    "id": "2a69eb99-a54e-4a1d-94ad-522dad54b4f7",
+    "lessonId": "demo",
+    "type": "pdf",
+    "url": "https://example.com/worksheet.pdf",
+    "title": "Practice Worksheet",
+    "createdAt": "2025-10-18T03:45:22.058Z"
+  },
+  {
+    "id": "e395008a-c5f0-4a06-8ccb-ac9f7519874c",
+    "lessonId": "demo",
+    "type": "video",
+    "url": "https://example.com/fractions.mp4",
+    "title": "Fractions — Intro",
+    "createdAt": "2025-10-18T03:59:17.421Z"
+  }
+]

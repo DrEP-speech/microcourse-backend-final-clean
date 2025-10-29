@@ -1,0 +1,194 @@
+{
+  "info": {
+    "name": "Microcourse Auth (Local) – No Refresh (Resilient)",
+    "_postman_id": "8d9e7d48-7f1e-4c9a-9b2f-4d12b3c0a111",
+    "description": "Idempotent auth flow for APIs that return a single access token (token/accessToken). Tries /register then /signup, then Login → Me → Logout. Includes safe defaults so runs don't fail when no environment is selected.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// -------- Collection-level safety defaults --------",
+          "if (!pm.environment.get('baseUrl') && !pm.collectionVariables.get('baseUrl')) {",
+          "  pm.collectionVariables.set('baseUrl', 'http://localhost:10000');",
+          "}",
+          "if (!pm.environment.get('email') && !pm.collectionVariables.get('email')) {",
+          "  pm.collectionVariables.set('email', 'mc.e2e.local@mailinator.com');",
+          "}",
+          "if (!pm.environment.get('password') && !pm.collectionVariables.get('password')) {",
+          "  pm.collectionVariables.set('password', 'Test1234!');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "0a) Signup (/register)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"name\": \"Test User\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","auth","register"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const code = pm.response.code;",
+              "pm.test('Signup (/register) responded', function () {",
+              "  pm.expect([200,201,400,409,404,405]).to.include(code);",
+              "});",
+              "// If route missing (404/405), try fallback /signup; else continue to login",
+              "if (code === 404 || code === 405) {",
+              "  pm.execution.setNextRequest('0b) Signup fallback (/signup)');",
+              "} else {",
+              "  pm.execution.setNextRequest('1) Login (Flow)');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "0b) Signup fallback (/signup)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"name\": \"Test User\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/signup",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","auth","signup"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Signup (/signup) responded', function () {",
+              "  pm.expect([200,201,400,409,404,405]).to.include(pm.response.code);",
+              "});",
+              "pm.execution.setNextRequest('1) Login (Flow)');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "1) Login (Flow)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","auth","login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login succeeded', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const j = pm.response.json();",
+              "  const access = j.token || j.accessToken || j.access_token || (j.data && (j.data.token || j.data.accessToken));",
+              "  pm.expect(!!access, 'token present').to.eql(true);",
+              "  pm.environment.set('accessToken', access);",
+              "});",
+              "// Single-token API → go straight to Me",
+              "pm.execution.setNextRequest('3) Me');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3) Me",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","auth","me"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Me OK', () => {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.execution.setNextRequest('4) Logout');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4) Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/logout",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","auth","logout"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Logout OK', () => {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "// Optional: clear tokens for cleanliness",
+              "pm.environment.set('accessToken','');"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

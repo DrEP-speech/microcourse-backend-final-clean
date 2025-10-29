@@ -1,13 +1,17 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
+const { Schema, Types } = mongoose;
 
-const refreshTokenSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true, required: true },
-  jti: { type: String, index: true, unique: true, required: true },
-  hashed: { type: String, required: true }, // hash of the token, never store raw
-  expiresAt: { type: Date, index: true, required: true },
-  revokedAt: { type: Date },
-  replacedBy: { type: String }, // jti of the next token
-}, { timestamps: true });
+const RefreshTokenSchema = new Schema(
+  {
+    user: { type: Types.ObjectId, ref: 'User', required: true, index: true },
+    token: { type: String, required: true, unique: true }, // JWT string
+    expiresAt: { type: Date, required: true, index: true },
+    userAgent: { type: String },
+    ip: { type: String }
+  },
+  { timestamps: true, collection: 'refreshtokens' }
+);
 
-refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL
-export default mongoose.model('RefreshToken', refreshTokenSchema);
+RefreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // auto-purge
+
+module.exports = mongoose.model('RefreshToken', RefreshTokenSchema);

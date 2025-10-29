@@ -1,0 +1,99 @@
+﻿openapi: 3.0.3
+info:
+  title: Microcourse Auth API
+  version: 1.0.0
+servers:
+  - url: http://localhost:10000/api
+    description: Local
+
+paths:
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: test@example.com
+                password:
+                  type: string
+                  example: Passw0rd!
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  token:   { type: string, description: Access token (JWT) }
+        "401":
+          description: Invalid credentials
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Accepts header/cookie refresh strategy depending on server config.
+      responses:
+        "200":
+          description: New access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  accessToken: { type: string }
+        "401":
+          description: No/invalid refresh token
+
+  /auth/me:
+    get:
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  user:
+                    type: object
+                    properties:
+                      _id:    { type: string, example: "68c2454c145409bad93ad36c" }
+                      email:  { type: string, example: "test@example.com" }
+                      role:   { type: string, example: "user" }
+        "401":
+          description: Missing/invalid access token
+
+  /auth/logout:
+    post:
+      summary: Logout
+      responses:
+        "200":
+          description: Cleared refresh cookie / session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

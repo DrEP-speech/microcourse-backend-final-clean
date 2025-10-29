@@ -1,0 +1,17 @@
+﻿{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://microcourse.ai/schemas/telehealthConsent.json",
+  "type":"object",
+  "required":["userId","signedAt","signerName"],
+  "properties": {
+    "_id": { "type":"string" },
+    "userId": { "type":"string" },
+    "sessionId": { "type":"string" },
+    "signedAt": { "type":"string","format":"date-time" },
+    "signerName": { "type":"string" },
+    "signerRole": { "type":"string" },
+    "pdfUrl": { "type":"string" },
+    "metadata": {}
+  },
+  "additionalProperties": false
+}
