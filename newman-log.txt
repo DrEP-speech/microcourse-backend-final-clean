@@ -40117,3 +40117,1984 @@ Attempting to set next request to 4) Logout
                       at assertion:0 in test-script                             
                       inside "4) Logout"                                        
 The process cannot access the file because it is being used by another process.
+====================== [Wed 10/29/2025 13:51:02.41] RUN START ======================
+Collection: Microcourse_Auth_AllEnvs_withFlow.postman_collection.json
+Environment: Microcourse_AllEnvs.postman_environment.json
+Data: postman_runner_data.csv
+newman
+
+Microcourse Auth (Local) � With Signup
+
+Iteration 1/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  2. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  4. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  6. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  8. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 10. Logout returned success
+
+Iteration 2/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 12. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 14. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 16. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 18. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 20. Logout returned success
+
+Iteration 3/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 22. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 24. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 26. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 28. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 30. Logout returned success
+
+┌─────────────────────────┬──────────┬──────────┐
+│                         │ executed │   failed │
+├─────────────────────────┼──────────┼──────────┤
+│              iterations │        3 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│                requests │       15 │       15 │
+├─────────────────────────┼──────────┼──────────┤
+│            test-scripts │       15 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│      prerequest-scripts │        0 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│              assertions │       15 │       15 │
+├─────────────────────────┴──────────┴──────────┤
+│ total run duration: 1395ms                    │
+├───────────────────────────────────────────────┤
+│ total data received: 0B (approx)              │
+└───────────────────────────────────────────────┘
+
+[31m   # [39m[31m failure        [39m[31m detail                                                    [39m
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 01.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 02.  AssertionError  Signup responded                                          
+      iteration: 1    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 03.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 04.  AssertionError  Login succeeded                                           
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 05.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 06.  AssertionError  Header refresh succeeded                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 07.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 08.  AssertionError  Me returned success:user                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 09.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 10.  AssertionError  Logout returned success                                   
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 11.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 12.  AssertionError  Signup responded                                          
+      iteration: 2    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 13.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 14.  AssertionError  Login succeeded                                           
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 15.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 16.  AssertionError  Header refresh succeeded                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 17.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 18.  AssertionError  Me returned success:user                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 19.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 20.  AssertionError  Logout returned success                                   
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 21.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 22.  AssertionError  Signup responded                                          
+      iteration: 3    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 23.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 24.  AssertionError  Login succeeded                                           
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 25.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 26.  AssertionError  Header refresh succeeded                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 27.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 28.  AssertionError  Me returned success:user                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 29.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 30.  AssertionError  Logout returned success                                   
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+The process cannot access the file because it is being used by another process.
+====================== [Wed 10/29/2025 21:50:33.41] RUN START ======================
+Collection: Microcourse_Auth_AllEnvs_withFlow.postman_collection.json
+Environment: Microcourse_AllEnvs.postman_environment.json
+Data: postman_runner_data.csv
+newman
+
+Microcourse Auth (Local) � With Signup
+
+Iteration 1/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  2. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  4. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  6. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  8. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 10. Logout returned success
+
+Iteration 2/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 12. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 14. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 16. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 18. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 20. Logout returned success
+
+Iteration 3/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 22. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 24. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 26. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 28. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 30. Logout returned success
+
+┌─────────────────────────┬──────────┬──────────┐
+│                         │ executed │   failed │
+├─────────────────────────┼──────────┼──────────┤
+│              iterations │        3 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│                requests │       15 │       15 │
+├─────────────────────────┼──────────┼──────────┤
+│            test-scripts │       15 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│      prerequest-scripts │        0 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│              assertions │       15 │       15 │
+├─────────────────────────┴──────────┴──────────┤
+│ total run duration: 1562ms                    │
+├───────────────────────────────────────────────┤
+│ total data received: 0B (approx)              │
+└───────────────────────────────────────────────┘
+
+[31m   # [39m[31m failure        [39m[31m detail                                                    [39m
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 01.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 02.  AssertionError  Signup responded                                          
+      iteration: 1    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 03.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 04.  AssertionError  Login succeeded                                           
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 05.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 06.  AssertionError  Header refresh succeeded                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 07.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 08.  AssertionError  Me returned success:user                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 09.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 10.  AssertionError  Logout returned success                                   
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 11.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 12.  AssertionError  Signup responded                                          
+      iteration: 2    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 13.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 14.  AssertionError  Login succeeded                                           
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 15.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 16.  AssertionError  Header refresh succeeded                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 17.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 18.  AssertionError  Me returned success:user                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 19.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 20.  AssertionError  Logout returned success                                   
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 21.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 22.  AssertionError  Signup responded                                          
+      iteration: 3    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 23.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 24.  AssertionError  Login succeeded                                           
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 25.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 26.  AssertionError  Header refresh succeeded                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 27.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 28.  AssertionError  Me returned success:user                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 29.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 30.  AssertionError  Logout returned success                                   
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+The process cannot access the file because it is being used by another process.
+====================== [Wed 10/29/2025 21:51:02.56] RUN START ======================
+Collection: Microcourse_Auth_AllEnvs_withFlow.postman_collection.json
+Environment: Microcourse_AllEnvs.postman_environment.json
+Data: postman_runner_data.csv
+newman
+
+Microcourse Auth (Local) � With Signup
+
+Iteration 1/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  2. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  4. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  6. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  8. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 10. Logout returned success
+
+Iteration 2/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 12. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 14. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 16. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 18. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 20. Logout returned success
+
+Iteration 3/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 22. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 24. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 26. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 28. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 30. Logout returned success
+
+┌─────────────────────────┬──────────┬──────────┐
+│                         │ executed │   failed │
+├─────────────────────────┼──────────┼──────────┤
+│              iterations │        3 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│                requests │       15 │       15 │
+├─────────────────────────┼──────────┼──────────┤
+│            test-scripts │       15 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│      prerequest-scripts │        0 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│              assertions │       15 │       15 │
+├─────────────────────────┴──────────┴──────────┤
+│ total run duration: 1375ms                    │
+├───────────────────────────────────────────────┤
+│ total data received: 0B (approx)              │
+└───────────────────────────────────────────────┘
+
+[31m   # [39m[31m failure        [39m[31m detail                                                    [39m
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 01.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 02.  AssertionError  Signup responded                                          
+      iteration: 1    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 03.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 04.  AssertionError  Login succeeded                                           
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 05.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 06.  AssertionError  Header refresh succeeded                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 07.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 08.  AssertionError  Me returned success:user                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 09.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 10.  AssertionError  Logout returned success                                   
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 11.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 12.  AssertionError  Signup responded                                          
+      iteration: 2    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 13.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 14.  AssertionError  Login succeeded                                           
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 15.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 16.  AssertionError  Header refresh succeeded                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 17.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 18.  AssertionError  Me returned success:user                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 19.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 20.  AssertionError  Logout returned success                                   
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 21.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 22.  AssertionError  Signup responded                                          
+      iteration: 3    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 23.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 24.  AssertionError  Login succeeded                                           
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 25.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 26.  AssertionError  Header refresh succeeded                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 27.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 28.  AssertionError  Me returned success:user                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 29.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 30.  AssertionError  Logout returned success                                   
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+The process cannot access the file because it is being used by another process.
+====================== [Wed 10/29/2025 22:51:04.62] RUN START ======================
+Collection: Microcourse_Auth_AllEnvs_withFlow.postman_collection.json
+Environment: Microcourse_AllEnvs.postman_environment.json
+Data: postman_runner_data.csv
+newman
+
+Microcourse Auth (Local) � With Signup
+
+Iteration 1/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  2. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  4. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  6. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  8. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 10. Logout returned success
+
+Iteration 2/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 12. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 14. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 16. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 18. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 20. Logout returned success
+
+Iteration 3/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 22. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 24. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 26. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 28. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 30. Logout returned success
+
+┌─────────────────────────┬──────────┬──────────┐
+│                         │ executed │   failed │
+├─────────────────────────┼──────────┼──────────┤
+│              iterations │        3 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│                requests │       15 │       15 │
+├─────────────────────────┼──────────┼──────────┤
+│            test-scripts │       15 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│      prerequest-scripts │        0 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│              assertions │       15 │       15 │
+├─────────────────────────┴──────────┴──────────┤
+│ total run duration: 1407ms                    │
+├───────────────────────────────────────────────┤
+│ total data received: 0B (approx)              │
+└───────────────────────────────────────────────┘
+
+[31m   # [39m[31m failure        [39m[31m detail                                                    [39m
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 01.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 02.  AssertionError  Signup responded                                          
+      iteration: 1    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 03.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 04.  AssertionError  Login succeeded                                           
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 05.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 06.  AssertionError  Header refresh succeeded                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 07.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 08.  AssertionError  Me returned success:user                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 09.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 10.  AssertionError  Logout returned success                                   
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 11.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 12.  AssertionError  Signup responded                                          
+      iteration: 2    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 13.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 14.  AssertionError  Login succeeded                                           
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 15.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 16.  AssertionError  Header refresh succeeded                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 17.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 18.  AssertionError  Me returned success:user                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 19.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 20.  AssertionError  Logout returned success                                   
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 21.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 22.  AssertionError  Signup responded                                          
+      iteration: 3    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 23.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 24.  AssertionError  Login succeeded                                           
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 25.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 26.  AssertionError  Header refresh succeeded                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 27.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 28.  AssertionError  Me returned success:user                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 29.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 30.  AssertionError  Logout returned success                                   
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+The process cannot access the file because it is being used by another process.
+====================== [Thu 10/30/2025 17:51:04.95] RUN START ======================
+Collection: Microcourse_Auth_AllEnvs_withFlow.postman_collection.json
+Environment: Microcourse_AllEnvs.postman_environment.json
+Data: postman_runner_data.csv
+newman
+
+Microcourse Auth (Local) � With Signup
+
+Iteration 1/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  2. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  4. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  6. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  8. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 10. Logout returned success
+
+Iteration 2/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 12. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 14. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 16. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 18. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 20. Logout returned success
+
+Iteration 3/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 22. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 24. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 26. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 28. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 30. Logout returned success
+
+┌─────────────────────────┬──────────┬──────────┐
+│                         │ executed │   failed │
+├─────────────────────────┼──────────┼──────────┤
+│              iterations │        3 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│                requests │       15 │       15 │
+├─────────────────────────┼──────────┼──────────┤
+│            test-scripts │       15 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│      prerequest-scripts │        0 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│              assertions │       15 │       15 │
+├─────────────────────────┴──────────┴──────────┤
+│ total run duration: 1437ms                    │
+├───────────────────────────────────────────────┤
+│ total data received: 0B (approx)              │
+└───────────────────────────────────────────────┘
+
+[31m   # [39m[31m failure        [39m[31m detail                                                    [39m
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 01.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 02.  AssertionError  Signup responded                                          
+      iteration: 1    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 03.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 04.  AssertionError  Login succeeded                                           
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 05.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 06.  AssertionError  Header refresh succeeded                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 07.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 08.  AssertionError  Me returned success:user                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 09.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 10.  AssertionError  Logout returned success                                   
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 11.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 12.  AssertionError  Signup responded                                          
+      iteration: 2    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 13.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 14.  AssertionError  Login succeeded                                           
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 15.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 16.  AssertionError  Header refresh succeeded                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 17.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 18.  AssertionError  Me returned success:user                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 19.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 20.  AssertionError  Logout returned success                                   
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 21.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 22.  AssertionError  Signup responded                                          
+      iteration: 3    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 23.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 24.  AssertionError  Login succeeded                                           
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 25.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 26.  AssertionError  Header refresh succeeded                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 27.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 28.  AssertionError  Me returned success:user                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 29.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 30.  AssertionError  Logout returned success                                   
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+The process cannot access the file because it is being used by another process.
+====================== [Thu 10/30/2025 18:55:34.32] RUN START ======================
+Collection: Microcourse_Auth_AllEnvs_withFlow.postman_collection.json
+Environment: Microcourse_AllEnvs.postman_environment.json
+Data: postman_runner_data.csv
+newman
+
+Microcourse Auth (Local) � With Signup
+
+Iteration 1/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  2. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  4. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  6. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  8. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 10. Logout returned success
+
+Iteration 2/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 12. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 14. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 16. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 18. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 20. Logout returned success
+
+Iteration 3/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 22. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 24. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 26. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 28. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 30. Logout returned success
+
+┌─────────────────────────┬──────────┬──────────┐
+│                         │ executed │   failed │
+├─────────────────────────┼──────────┼──────────┤
+│              iterations │        3 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│                requests │       15 │       15 │
+├─────────────────────────┼──────────┼──────────┤
+│            test-scripts │       15 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│      prerequest-scripts │        0 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│              assertions │       15 │       15 │
+├─────────────────────────┴──────────┴──────────┤
+│ total run duration: 1480ms                    │
+├───────────────────────────────────────────────┤
+│ total data received: 0B (approx)              │
+└───────────────────────────────────────────────┘
+
+[31m   # [39m[31m failure        [39m[31m detail                                                    [39m
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 01.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 02.  AssertionError  Signup responded                                          
+      iteration: 1    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 03.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 04.  AssertionError  Login succeeded                                           
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 05.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 06.  AssertionError  Header refresh succeeded                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 07.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 08.  AssertionError  Me returned success:user                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 09.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 10.  AssertionError  Logout returned success                                   
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 11.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 12.  AssertionError  Signup responded                                          
+      iteration: 2    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 13.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 14.  AssertionError  Login succeeded                                           
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 15.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 16.  AssertionError  Header refresh succeeded                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 17.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 18.  AssertionError  Me returned success:user                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 19.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 20.  AssertionError  Logout returned success                                   
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 21.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 22.  AssertionError  Signup responded                                          
+      iteration: 3    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 23.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 24.  AssertionError  Login succeeded                                           
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 25.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 26.  AssertionError  Header refresh succeeded                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 27.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 28.  AssertionError  Me returned success:user                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 29.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 30.  AssertionError  Logout returned success                                   
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+The process cannot access the file because it is being used by another process.
+====================== [Fri 10/31/2025 20:51:04.01] RUN START ======================
+Collection: Microcourse_Auth_AllEnvs_withFlow.postman_collection.json
+Environment: Microcourse_AllEnvs.postman_environment.json
+Data: postman_runner_data.csv
+newman
+
+Microcourse Auth (Local) � With Signup
+
+Iteration 1/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  2. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  4. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  6. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+  8. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 10. Logout returned success
+
+Iteration 2/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 12. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 14. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 16. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 18. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 20. Logout returned success
+
+Iteration 3/3
+
+→ 0) Signup (idempotent)
+  POST http://localhost:10000/api/api/auth/signup [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 22. Signup responded
+
+Attempting to set next request to 1) Login (Flow)
+
+→ 1) Login (Flow)
+  POST http://localhost:10000/api/api/auth/login [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 24. Login succeeded
+
+Attempting to set next request to 2) Refresh (header)
+
+→ 2) Refresh (header)
+  POST http://localhost:10000/api/api/auth/refresh [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 26. Header refresh succeeded
+
+Attempting to set next request to 3) Me
+
+→ 3) Me
+  GET http://localhost:10000/api/api/auth/me [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 28. Me returned success:user
+
+Attempting to set next request to 4) Logout
+
+→ 4) Logout
+  POST http://localhost:10000/api/api/auth/logout [errored]
+     connect ECONNREFUSED 127.0.0.1:10000
+ 30. Logout returned success
+
+┌─────────────────────────┬──────────┬──────────┐
+│                         │ executed │   failed │
+├─────────────────────────┼──────────┼──────────┤
+│              iterations │        3 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│                requests │       15 │       15 │
+├─────────────────────────┼──────────┼──────────┤
+│            test-scripts │       15 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│      prerequest-scripts │        0 │        0 │
+├─────────────────────────┼──────────┼──────────┤
+│              assertions │       15 │       15 │
+├─────────────────────────┴──────────┴──────────┤
+│ total run duration: 1440ms                    │
+├───────────────────────────────────────────────┤
+│ total data received: 0B (approx)              │
+└───────────────────────────────────────────────┘
+
+[31m   # [39m[31m failure        [39m[31m detail                                                    [39m
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 01.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 02.  AssertionError  Signup responded                                          
+      iteration: 1    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 03.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 04.  AssertionError  Login succeeded                                           
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 05.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 06.  AssertionError  Header refresh succeeded                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 07.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 08.  AssertionError  Me returned success:user                                  
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 09.  Error                                                                     
+      iteration: 1    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 10.  AssertionError  Logout returned success                                   
+      iteration: 1    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 11.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 12.  AssertionError  Signup responded                                          
+      iteration: 2    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 13.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 14.  AssertionError  Login succeeded                                           
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 15.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 16.  AssertionError  Header refresh succeeded                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 17.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 18.  AssertionError  Me returned success:user                                  
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 19.  Error                                                                     
+      iteration: 2    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 20.  AssertionError  Logout returned success                                   
+      iteration: 2    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 21.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 22.  AssertionError  Signup responded                                          
+      iteration: 3    expected [ 200, 201, 400, 409, 404 ] to include undefined 
+                      at assertion:0 in test-script                             
+                      inside "0) Signup (idempotent)"                           
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 23.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 24.  AssertionError  Login succeeded                                           
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "1) Login (Flow)"                                  
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 25.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 26.  AssertionError  Header refresh succeeded                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "2) Refresh (header)"                              
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 27.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 28.  AssertionError  Me returned success:user                                  
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "3) Me"                                            
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 29.  Error                                                                     
+      iteration: 3    connect ECONNREFUSED 127.0.0.1:10000                      
+                      at request                                                
+                      inside ""                                                 
+[90m     [39m[90m                [39m[90m                                                           [39m
+ 30.  AssertionError  Logout returned success                                   
+      iteration: 3    expected PostmanResponse{ …(5) } to have property 'code'  
+                      at assertion:0 in test-script                             
+                      inside "4) Logout"                                        
+The process cannot access the file because it is being used by another process.

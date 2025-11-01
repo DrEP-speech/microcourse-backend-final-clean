@@ -5,27 +5,35 @@ const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
-    email: { type: String, required: true, trim: true, lowercase: true },
+    email: { type: String, required: true, lowercase: true, trim: true },
     password: { type: String, required: true, select: false },
-    role: { type: String, enum: ["owner", "therapist", "parent", "admin", "user"], default: "user" },
-    profile: { type: mongoose.Schema.Types.Mixed, default: {} }
+    role: { type: String, enum: ["owner", "admin", "user"], default: "user" },
+    profile: {
+      displayName: { type: String, default: "" },
+      avatarUrl: { type: String, default: "" }
+    }
   },
-  { timestamps: true }
+  { timestamps: true, versionKey: false }
 );
 
-// Define the *single* unique index for email with a stable name
+// ✅ single source of truth for uniqueness (prevents “duplicate index” warnings)
 userSchema.index({ email: 1 }, { unique: true, name: "uniq_email" });
 
-// Hash on create/change
+// Hash on create/change only
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// Hide password in JSON
+userSchema.methods.comparePassword = function (plain) {
+  return bcrypt.compare(plain, this.password);
+};
+
+// Hide password on toJSON
 userSchema.set("toJSON", {
-  transform(_doc, ret) {
+  transform: (_doc, ret) => {
     delete ret.password;
     return ret;
   }
