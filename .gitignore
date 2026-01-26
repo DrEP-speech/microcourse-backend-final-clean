@@ -65,3 +65,19 @@ server.*.log
 # allow safe examples
 !seed-artifacts.example.json
 !smoke-artifacts.example.json
+# === Runtime secrets ===
+!/.env.example
+# === Logs ===
+# === E2E artifacts ===
+seed*.log
+smoke*.log
+# === Backups & archives ===
+*.bak
+*.backup
+*_archive/
+# === Node / build ===
+dist/
+build/
+.next/
+.cache/
+# === OS noise ===
