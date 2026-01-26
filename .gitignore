@@ -81,3 +81,55 @@ build/
 .next/
 .cache/
 # === OS noise ===
+
+# =========================
+# MicroCourse: local secrets
+# =========================
+.env
+.env.*
+!.env.example
+!.env.sample
+seed-artifacts.json
+smoke-artifacts.json
+**/seed-artifacts.json
+**/smoke-artifacts.json
+
+# =========================
+# Logs / reports / runtime
+# =========================
+*.log
+logs/
+server.out.log
+server.err.log
+build.log
+gate.run.log
+newman-log.txt
+newman-report*.html
+newman-report.html
+test-results/
+coverage/
+
+# =========================
+# Backups / archives / quarantine
+# =========================
+_archive/
+_quarantine/
+_routes_UNUSED/
+_env_archive/
+_backup_*/
+*.bak
+*.bak.*
+*.ps5fix.bak
+*.orig
+*.tmp
+
+# =========================
+# Node / tooling
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
+
