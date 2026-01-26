@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "seededAt": "2026-01-26T00:15:08.854Z",
+  "instructor": {
+    "id": "697227f768a002e7259727a7",
+    "role": "instructor",
+    "token": "<JWT_GENERATED_AT_RUNTIME>",
+    "email": "instructor@example.com",
+    "password": "<SET_IN_ENV_OR_SEED>"
+  },
+  "student": {
+    "id": "697227f768a002e7259727a8",
+    "role": "student",
+    "token": "<JWT_GENERATED_AT_RUNTIME>",
+    "email": "student@example.com",
+    "password": "<SET_IN_ENV_OR_SEED>"
+  },
+  "course": {
+    "id": "697227f785e729fd43679f57",
+    "slug": "microcourse-forge-how-to-use-this-app-start-here",
+    "title": "MicroCourse Forge - How to Use This App (Start Here)"
+  },
+  "apiBase": "http://localhost:4000/api"
+}

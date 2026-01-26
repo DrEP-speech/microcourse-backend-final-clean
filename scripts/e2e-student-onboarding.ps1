@@ -90,7 +90,16 @@ function GetStudentCourses {
   return @{ ok=$true; items=$items; resp=$r }
 }
 
-Write-Host "=== E2E Student Onboarding Path ===" -ForegroundColor Cyan
+Write-Host "=== E2E Student Onboarding Path ===
+# --- artifacts fallback (PS5.1-safe) ---
+$ArtifactsPath = Join-Path $PSScriptRoot "..\seed-artifacts.json"
+$ArtifactsExample = Join-Path $PSScriptRoot "..\seed-artifacts.example.json"
+if (-not (Test-Path $ArtifactsPath) -and (Test-Path $ArtifactsExample)) {
+  Copy-Item -Force $ArtifactsExample $ArtifactsPath
+  Write-Host "[AUTOHEAL] seed-artifacts.json missing; copied from seed-artifacts.example.json (tokens will be generated/overwritten by seed)." -ForegroundColor Yellow
+}
+# --- end fallback ---
+" -ForegroundColor Cyan
 Write-Host ("API Base:  " + $ApiBase)
 Write-Host ("Artifacts: " + $ArtifactsPath)
 Write-Host ("Seed:      " + $SeedScriptPath)
@@ -171,4 +180,5 @@ Write-Host ("      id:   " + $id)
 if ($slug) { Write-Host ("      slug: " + $slug) }
 
 exit 0
+
 

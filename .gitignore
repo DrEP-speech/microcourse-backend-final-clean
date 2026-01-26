@@ -55,3 +55,13 @@ scripts/pwsh/
 !seed-artifacts.json
 !docs/openapi.yaml
 !tools/*.json
+# --- security: local artifacts (do not commit) ---
+seed-artifacts.json
+smoke-artifacts.json
+e2e*.log
+e2e-*.log
+seed-*.log
+server.*.log
+# allow safe examples
+!seed-artifacts.example.json
+!smoke-artifacts.example.json
