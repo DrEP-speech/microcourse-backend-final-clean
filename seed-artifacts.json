@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "seededAt": "2026-01-26T00:15:08.854Z",
+  "instructor": {
+    "id": "697227f768a002e7259727a7",
+    "role": "instructor",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5NzIyN2Y3NjhhMDAyZTcyNTk3MjdhOCIsInJvbGUiOiJzdHVkZW50IiwiZW1haWwiOiJzdHVkZW50QGV4YW1wbGUuY29tIiwiaWF0IjoxNzY5MzkwNjczLCJleHAiOjE3Njk5OTU0NzN9.EGrIl2gF8NYc8YNu-iuhzj4mEfW03kHTveVmKb5LM04",
+    "email": "instructor@example.com",
+    "password": "Password123!"
+  },
+  "student": {
+    "id": "697227f768a002e7259727a8",
+    "role": "student",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5NzIyN2Y3NjhhMDAyZTcyNTk3MjdhOCIsInJvbGUiOiJzdHVkZW50IiwiZW1haWwiOiJzdHVkZW50QGV4YW1wbGUuY29tIiwiaWF0IjoxNzY5MzkwNjczLCJleHAiOjE3Njk5OTU0NzN9.EGrIl2gF8NYc8YNu-iuhzj4mEfW03kHTveVmKb5LM04",
+    "email": "student@example.com",
+    "password": "Password123!"
+  },
+  "course": {
+    "id": "697227f785e729fd43679f57",
+    "slug": "microcourse-forge-how-to-use-this-app-start-here",
+    "title": "MicroCourse Forge - How to Use This App (Start Here)"
+  },
+  "apiBase": "http://localhost:4000/api"
+}
