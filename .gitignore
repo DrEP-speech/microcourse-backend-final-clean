@@ -138,3 +138,22 @@ yarn-error.log*
 *.ps1.bak*
 newman-*.html
 newman-*.json
+# ---- Local env/secrets ----
+seed-artifacts.*.json
+smoke-artifacts.*.json
+# ---- Node / build ----
+out/
+.turbo/
+*.tsbuildinfo
+# ---- Logs & runtime ----
+# ---- Test/Report artifacts ----
+newman/
+newman-report.json
+playwright-report/
+cypress/videos/
+cypress/screenshots/
+*.xml
+*.junit.xml
+# ---- OS/editor cruft ----
+.idea/
+.vscode/
