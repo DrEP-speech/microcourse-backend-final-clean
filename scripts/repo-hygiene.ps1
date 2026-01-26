@@ -77,6 +77,14 @@ foreach ($r in $rules) {
   Ensure-LineInFile -FilePath $gitignore -Line $r
 }
 
+foreach ($line in $lines) {
+    if ([string]::IsNullOrWhiteSpace($line)) {
+        continue
+    }
+
+    Ensure-GitIgnoreLine -Path $gitignore -Line $line.Trim()
+}
+
 Write-Host "[OK] .gitignore updated" -ForegroundColor Green
 
 # --- 3) Archive clutter safely (without moving _archive into itself) ---
@@ -136,5 +144,6 @@ if (Test-Path $seedArtifacts) {
 }
 
 Write-Host "=== Done ===" -ForegroundColor Cyan
+
 
 
