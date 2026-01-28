@@ -1,0 +1,6 @@
+Package   Current  Wanted  Latest  Location               Depended by
+bcryptjs    2.4.3   2.4.3   3.0.3  node_modules/bcryptjs  microcourse-backend-final-clean
+cors        2.8.5   2.8.6   2.8.6  node_modules/cors      microcourse-backend-final-clean
+dotenv     16.6.1  16.6.1  17.2.3  node_modules/dotenv    microcourse-backend-final-clean
+express    4.22.1  4.22.1   5.2.1  node_modules/express   microcourse-backend-final-clean
+mongoose   8.21.1  8.22.0   9.1.5  node_modules/mongoose  microcourse-backend-final-clean

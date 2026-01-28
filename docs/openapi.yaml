@@ -1,304 +1,150 @@
 openapi: 3.0.3
 info:
-  title: Microcourse API
-  version: 1.0.0
-  description: API for creating quizzes and grading results.
-  license:
-    name: MIT
+  title: MicroCourse API
+  version: "1.0.0"
+  description: |
+    Auth + health endpoints.
+    Access token via **Bearer**, refresh via **httpOnly cookie** (`refresh_token`).
+
 servers:
-  - url: "{scheme}://{host}"
-    variables:
-      scheme:
-        enum: [https, http]
-        default: http
-      host:
-        default: localhost:10000
+  - url: http://localhost:10003
+    description: Local Dev
+
 tags:
-  - name: System
-  - name: Quizzes
-  - name: Results
-security: []  # satisfies "security defined" rule without requiring auth
+  - name: Health
+    description: Liveness & readiness
+  - name: Auth
+    description: Authentication, identity, and guarded utilities
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+  schemas:
+    AuthUser:
+      type: object
+      properties:
+        _id: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [owner, admin, user] }
+        profile: { type: object }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: owner@example.com }
+        password: { type: string, example: ChangeMe123? }
+    LoginResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        token: { type: string, description: JWT access token }
+        user: { $ref: "#/components/schemas/AuthUser" }
+
+security:
+  - bearerAuth: []   # default for all operations unless overridden
 
 paths:
-  /api/healthz:
+  /ping:
     get:
-      tags: [System]
-      summary: Health probe
-      operationId: getHealth
+      tags: [Health]
+      summary: Liveness
+      operationId: ping
+      security: []   # public
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Health"
-        "400":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-
-  /api/quizzes:
-    get:
-      tags: [Quizzes]
-      summary: List quizzes
-      operationId: listQuizzes
-      responses:
-        "200":
-          description: List of quizzes
-          content:
-            application/json:
-              schema:
                 type: object
                 properties:
-                  success: { type: boolean }
-                  data:
-                    type: array
-                    items: { $ref: "#/components/schemas/Quiz" }
+                  ok: { type: boolean }
+                  ts: { type: string }
+
+  /ready:
+    get:
+      tags: [Health]
+      summary: Readiness (DB connected)
+      operationId: ready
+      security: []   # public
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready }
+
+  /api/auth/login:
     post:
-      tags: [Quizzes]
-      summary: Create quiz
-      operationId: createQuiz
+      tags: [Auth]
+      summary: Login and receive a bearer access token
+      operationId: authLogin
+      security: []   # public
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/Quiz" }
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  item: { $ref: "#/components/schemas/Quiz" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-
-  /api/quizzes/{id}:
-    get:
-      tags: [Quizzes]
-      summary: Get quiz by id
-      operationId: getQuizById
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, pattern: "^[a-f0-9]{24}$" }
+            schema: { $ref: "#/components/schemas/LoginRequest" }
       responses:
         "200":
-          description: Quiz
+          description: Logged in
+          headers:
+            Set-Cookie:
+              description: httpOnly cookie with refresh_token
+              schema: { type: string }
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  item: { $ref: "#/components/schemas/Quiz" }
-        "404": { $ref: "#/components/responses/NotFound" }
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "401": { description: Invalid credentials }
 
-  /api/quizzes/{id}/answer-key:
+  /api/auth/whoami:
     get:
-      tags: [Quizzes]
-      summary: Get quiz answer key
-      operationId: getQuizAnswerKey
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, pattern: "^[a-f0-9]{24}$" }
+      tags: [Auth]
+      summary: Return JWT payload info
+      operationId: authWhoami
       responses:
         "200":
-          description: Answer key
+          description: OK
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   success: { type: boolean }
-                  key:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/AnswerKeyItem"
-        "404": { $ref: "#/components/responses/NotFound" }
+                  auth:
+                    type: object
+                    properties:
+                      sub: { type: string }
+                      role: { type: string }
+                      email: { type: string }
 
-  /api/results:
+  /api/auth/admin/ping:
     get:
-      tags: [Results]
-      summary: List results for a user
-      operationId: listResultsForUser
-      parameters:
-        - in: query
-          name: userId
-          required: true
-          schema: { type: string, pattern: "^[a-f0-9]{24}$" }
+      tags: [Auth]
+      summary: Guarded ping (owner/admin)
+      operationId: authAdminPing
       responses:
-        "200":
-          description: Results
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  data:
-                    type: array
-                    items: { $ref: "#/components/schemas/QuizResult" }
+        "200": { description: OK }
+        "403": { description: Forbidden }
 
-  /api/results/grade:
+  /api/auth/refresh:
     post:
-      tags: [Results]
-      summary: Grade a submission
-      operationId: gradeSubmission
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/GradeSubmission" }
+      tags: [Auth]
+      summary: Issue a new access token using cookie-based refresh token
+      operationId: authRefresh
+      security: [{ cookieAuth: [] }]
       responses:
         "200":
-          description: Graded result
+          description: New access token
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   success: { type: boolean }
-                  item: { $ref: "#/components/schemas/QuizResult" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "404": { $ref: "#/components/responses/NotFound" }
-
-components:
-  responses:
-    BadRequest:
-      description: Bad Request
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
-    NotFound:
-      description: Not Found
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
-
-  schemas:
-    Health:
-      type: object
-      properties:
-        ok: { type: boolean }
-        dbReady: { type: integer }
-        uptime: { type: number }
-
-    Error:
-      type: object
-      required: [success, message]
-      properties:
-        success: { type: boolean, example: false }
-        message: { type: string }
-
-    Quiz:
-      type: object
-      required: [title, questions]
-      properties:
-        _id: { type: string, pattern: "^[a-f0-9]{24}$" }
-        title: { type: string }
-        description: { type: string }
-        settings:
-          type: object
-          properties:
-            timeLimitSec: { type: integer, minimum: 0 }
-            shuffle: { type: boolean }
-            attempts: { type: integer, minimum: 1 }
-        questions:
-          type: array
-          minItems: 1
-          items: { $ref: "#/components/schemas/QuizQuestion" }
-        updatedAt: { type: string, format: date-time }
-
-    QuizQuestion:
-      type: object
-      required: [prompt, type, points]
-      properties:
-        _id: { type: string, pattern: "^[a-f0-9]{24}$" }
-        prompt: { type: string }
-        type:
-          type: string
-          enum: [single, multi, short, numeric]
-        points: { type: integer, minimum: 0 }
-        options:
-          type: array
-          items: { $ref: "#/components/schemas/Option" }
-        meta:
-          type: object
-          additionalProperties: false
-
-    Option:
-      type: object
-      required: [id, text]
-      properties:
-        id: { type: string }
-        text: { type: string }
-        correct: { type: boolean }
-
-    AnswerKeyItem:
-      type: object
-      required: [questionId, type, correct, points]
-      properties:
-        questionId: { type: string, pattern: "^[a-f0-9]{24}$" }
-        type: { type: string, enum: [single, multi, short, numeric] }
-        points: { type: integer, minimum: 0 }
-        correct:
-          type: array
-          items: { type: string }
-
-    GradeSubmission:
-      type: object
-      required: [quizId, userId, answers]
-      properties:
-        quizId: { type: string, pattern: "^[a-f0-9]{24}$" }
-        userId: { type: string, pattern: "^[a-f0-9]{24}$" }
-        answers:
-          type: array
-          items:
-            type: object
-            required: [questionId]
-            properties:
-              questionId: { type: string, pattern: "^[a-f0-9]{24}$" }
-              selected:
-                type: array
-                items: { type: string }
-              input:
-                oneOf:
-                  - { type: string }
-                  - { type: number }
-
-    QuizResult:
-      type: object
-      required: [quizId, userId, score, percentage, correctCount, totalCount, submittedAt, breakdown]
-      properties:
-        _id: { type: string, pattern: "^[a-f0-9]{24}$" }
-        quizId: { type: string, pattern: "^[a-f0-9]{24}$" }
-        userId: { type: string, pattern: "^[a-f0-9]{24}$" }
-        score: { type: number }
-        percentage: { type: number }
-        correctCount: { type: integer }
-        totalCount: { type: integer }
-        submittedAt: { type: string, format: date-time }
-        breakdown:
-          type: array
-          items:
-            type: object
-            required: [questionId, correct]
-            properties:
-              questionId: { type: string, pattern: "^[a-f0-9]{24}$" }
-              correct: { type: boolean }
-              awarded: { type: number }
-              selected:
-                type: array
-                items: { type: string }
-              input:
-                oneOf:
-                  - { type: string }
-                  - { type: number }
+                  token: { type: string }
+        "401": { description: Invalid or missing refresh token }

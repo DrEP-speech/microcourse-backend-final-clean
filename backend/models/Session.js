@@ -1,4 +1,4 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const SessionSchema = new mongoose.Schema({
   therapistId: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },

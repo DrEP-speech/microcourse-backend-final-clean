@@ -1,26 +1,33 @@
-import mongoose from 'mongoose';
-const { Schema, model } = mongoose;
+const mongoose = require("mongoose");
 
-const courseSchema = new Schema(
+function slugify(str = "") {
+  return String(str)
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+}
+
+const CourseSchema = new mongoose.Schema(
   {
-    title:       { type: String, required: true, trim: true, index: true },
-    description: { type: String, default: '' },
-    published:   { type: Boolean, default: false, index: true },
-    owner:       { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    title: { type: String, required: true, trim: true },
+    description: { type: String, default: "" },
+    status: { type: String, enum: ["draft", "published"], default: "draft" },
 
-    // soft-delete + audit
-    deleted:     { type: Boolean, default: false, index: true },
-    deletedAt:   { type: Date },
-    deletedBy:   { type: Schema.Types.ObjectId, ref: 'User' },
-    updatedBy:   { type: Schema.Types.ObjectId, ref: 'User' },
+    // slug is REQUIRED
+    slug: { type: String, required: true, unique: true, index: true, trim: true },
+
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }
   },
   { timestamps: true }
 );
 
-courseSchema.index({ owner: 1, createdAt: -1 });
-courseSchema.index({ published: 1, createdAt: -1 });
+CourseSchema.pre("validate", function (next) {
+  if (!this.slug && this.title) {
+    this.slug = slugify(this.title);
+  }
+  next();
+});
 
-export default model('Course', courseSchema);
-
-
-
+module.exports = mongoose.model("Course", CourseSchema);

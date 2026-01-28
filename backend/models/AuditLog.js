@@ -1,4 +1,4 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const AuditLogSchema = new mongoose.Schema({
   entity: { type: String, required: true, index: true },

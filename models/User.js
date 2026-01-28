@@ -1,42 +1,30 @@
-"use strict";
-
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-const userSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
-    email: { type: String, required: true, lowercase: true, trim: true },
-    password: { type: String, required: true, select: false },
-    role: { type: String, enum: ["owner", "admin", "user"], default: "user" },
-    profile: {
-      displayName: { type: String, default: "" },
-      avatarUrl: { type: String, default: "" }
-    }
+    name: { type: String, default: "" },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    role: { type: String, enum: ["student", "instructor", "admin"], default: "student" },
+
+    // IMPORTANT: select:false means normal queries do NOT return it.
+    // In login we must use .select("+password")
+    password: { type: String, required: true, select: false }
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true }
 );
 
-// ✅ single source of truth for uniqueness (prevents “duplicate index” warnings)
-userSchema.index({ email: 1 }, { unique: true, name: "uniq_email" });
-
-// Hash on create/change only
-userSchema.pre("save", async function (next) {
+UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-userSchema.methods.comparePassword = function (plain) {
+UserSchema.methods.comparePassword = async function (plain) {
+  // Prevent "Illegal arguments: string, undefined"
+  if (!plain || !this.password) return false;
   return bcrypt.compare(plain, this.password);
 };
 
-// Hide password on toJSON
-userSchema.set("toJSON", {
-  transform: (_doc, ret) => {
-    delete ret.password;
-    return ret;
-  }
-});
-
-module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+module.exports = mongoose.model("User", UserSchema);

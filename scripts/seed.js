@@ -1,19 +1,12 @@
-// scripts/seed.js (ESM)
-import 'dotenv/config';
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-import User from '../models/User.js'; // adjust path/name
+/* eslint-disable no-console */
+const { spawnSync } = require("child_process");
 
-await mongoose.connect(process.env.MONGO_URL, { dbName: 'microcourse' });
+function run(script) {
+  const r = spawnSync(process.execPath, [script], { stdio: "inherit" });
+  if (r.status !== 0) process.exit(r.status);
+}
 
-const email = 'admin@microcourse.local';
-const passwordHash = await bcrypt.hash('Admin123!', 12);
+run(require("path").join(__dirname, "seed-owner.js"));
+run(require("path").join(__dirname, "seed-demo.js"));
 
-await User.updateOne(
-  { email },
-  { $setOnInsert: { name: 'Admin', email, password: passwordHash, role: 'admin' } },
-  { upsert: true }
-);
-
-console.log('✅ Seed complete');
-await mongoose.disconnect();
+console.log("✅ All seeds complete.");

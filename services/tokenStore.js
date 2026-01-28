@@ -1,4 +1,4 @@
-﻿import IORedis from "ioredis";
+import IORedis from "ioredis";
 class TokenStore {
   constructor() {
     this.redisUrl = process.env.REDIS_URL || "";

@@ -1,4 +1,4 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const InsightSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },

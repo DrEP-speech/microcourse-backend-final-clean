@@ -1,40 +1,46 @@
-"use strict";
+require("dotenv").config();
 
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
-const path = require("path");
+const { connectDB } = require("./config/db");
 
-const PORT = Number(process.env.PORT || 10003);
-const MONGO_URL = process.env.MONGODB_URL || "mongodb://127.0.0.1:27017/microcourse";
+const authRoutes = require("./routes/authRoutes");
+const courseRoutes = require("./routes/courseRoutes");
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// Health
-app.get("/healthz", (_req, res) => res.json({ ok: true }));
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    credentials: true,
+  })
+);
 
-// Auth
-app.use("/api/auth", require("./routes/auth"));
+app.use(express.json({ limit: "2mb" }));
 
-// 404
-app.use((req, res) => res.status(404).json({ success: false, message: `Not found: ${req.method} ${req.originalUrl}` }));
+app.get("/api/health", (req, res) => res.json({ ok: true, status: "up" }));
 
-// Global error handler (last)
-app.use((err, _req, res, _next) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({ success: false, message: "Server error" });
+app.use("/api/auth", authRoutes);
+app.use("/api/courses", courseRoutes);
+
+app.use((err, req, res, next) => {
+  console.error("API Error:", err);
+  res.status(err.status || 500).json({
+    ok: false,
+    error: err.message || "Server error",
+  });
 });
 
-// Mongo + start
-(async () => {
-  try {
-    await mongoose.connect(MONGO_URL);
-    console.log("[ok] Mongo connected:", MONGO_URL);
-    app.listen(PORT, () => console.log(`[ok] Server listening on http://localhost:${PORT}`));
-  } catch (err) {
-    console.error("Mongo connect failed:", err);
+const PORT = Number(process.env.PORT || 4000);
+
+connectDB()
+  .then(() => {
+    console.log("DB connected");
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`API listening on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Startup failed:", err && err.message ? err.message : err);
     process.exit(1);
-  }
-})();
+  });

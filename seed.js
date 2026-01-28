@@ -1,4 +1,4 @@
-﻿/* seed.js — demo data seeder */
+/* seed.js — demo data seeder */
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 dotenv.config();

@@ -1,4 +1,4 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const EmailLogSchema = new mongoose.Schema({
   to: [{ type: String, index: true }],

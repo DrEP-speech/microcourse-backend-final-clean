@@ -1,4 +1,4 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const CheckInSchema = new mongoose.Schema({
   childId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },

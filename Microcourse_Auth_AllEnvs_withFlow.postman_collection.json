@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Microcourse Auth (Local) – With Signup",
+    "name": "Microcourse Auth (Local) ï¿½ With Signup",
     "_postman_id": "3c0c8a44-3b2c-4f9d-9f60-12ab34cd56ef",
     "description": "Idempotent Signup ? Login ? Refresh ? Me ? Logout flow (pm.execution.setNextRequest)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"

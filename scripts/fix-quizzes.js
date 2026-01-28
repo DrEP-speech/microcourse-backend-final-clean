@@ -1,4 +1,4 @@
-﻿/* scripts/fix-quizzes.js */
+/* scripts/fix-quizzes.js */
 import mongoose from "mongoose";
 
 const uri = process.env.MONGO_URL || process.env.MONGO_URI;

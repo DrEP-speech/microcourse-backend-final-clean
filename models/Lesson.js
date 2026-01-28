@@ -1,16 +1,16 @@
-import mongoose from 'mongoose';
-const { Schema } = mongoose;
+const mongoose = require("mongoose");
 
-const lessonSchema = new Schema(
+const LessonSchema = new mongoose.Schema(
   {
-    course: { type: Schema.Types.ObjectId, ref: 'Course', index: true },
+    courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
     title: { type: String, required: true, trim: true },
-    content: { type: String, default: '' },     // markdown or HTML
-    order: { type: Number, default: 0 },
-    isPublished: { type: Boolean, default: false },
-    durationMin: { type: Number, default: 0 },
+    content: { type: String, default: "" },
+    videoUrl: { type: String, default: "" },
+    durationMinutes: { type: Number, default: 5 },
+    order: { type: Number, default: 1 },
+    published: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Lesson || mongoose.model('Lesson', lessonSchema);
+module.exports = mongoose.model("Lesson", LessonSchema, "lessons");

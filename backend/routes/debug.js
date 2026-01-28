@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const router = express.Router();
 
 // Gate all debug routes behind DEBUG_ROUTES=1 (and never mount in prod)

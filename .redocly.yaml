@@ -1,4 +1,4 @@
-﻿apis:
+apis:
   main:
     root: backend/docs/openapi.yaml
 lint:

@@ -1,4 +1,4 @@
-﻿/* scripts/seed-more.js */
+/* scripts/seed-more.js */
 import mongoose from "mongoose";
 
 const uri = process.env.MONGO_URL || process.env.MONGO_URI;

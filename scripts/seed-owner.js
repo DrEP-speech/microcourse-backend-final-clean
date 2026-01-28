@@ -1,31 +1,33 @@
-"use strict";
+require("dotenv").config();
+const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
-const User = require("../models/User");
+const User = require("../src/models/User");
 
-const MONGO_URL = process.env.MONGODB_URL || "mongodb://127.0.0.1:27017/microcourse";
+async function main() {
+  const uri = process.env.MONGODB_URI;
+  const email = process.env.SEED_OWNER_EMAIL || "owner@microcourse.local";
+  const password = process.env.SEED_OWNER_PASSWORD || "ChangeMe123!";
+  const name = process.env.SEED_OWNER_NAME || "Owner Admin";
 
-(async () => {
-  try {
-    await mongoose.connect(MONGO_URL);
-    const email = "owner@example.com";
-    const passw0rd = "passw0rd";
+  if (!uri) throw new Error("MONGODB_URI missing");
 
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = await User.create({ email, password: passw0rd, role: "owner", profile: { displayName: "Owner" } });
-      console.log("Seeded owner:", user.email);
-    } else {
-      // ensure password is hashed if plain somehow slipped in
-      if (user.password && !user.password.startsWith("$2")) {
-        user.password = passw0rd;
-        await user.save();
-        console.log("Backfilled owner password hash");
-      }
-      console.log("Owner already exists:", user.email);
-    }
-    process.exit(0);
-  } catch (e) {
-    console.error("[seed-owner] error:", e);
-    process.exit(1);
+  await mongoose.connect(uri);
+
+  const existing = await User.findOne({ email });
+  if (existing) {
+    console.log("Seed owner: already exists:", email);
+    await mongoose.disconnect();
+    return;
   }
-})();
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  await User.create({ name, email, passwordHash, role: "admin" });
+
+  console.log("✅ Seed owner created:", email, "(role=admin)");
+  await mongoose.disconnect();
+}
+
+main().catch((e) => {
+  console.error("❌ Seed owner failed:", e.message);
+  process.exit(1);
+});

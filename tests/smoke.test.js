@@ -1,4 +1,4 @@
-﻿const request = require("supertest");
+const request = require("supertest");
 const base = process.env.BASE_URL || "http://localhost:10000";
 
 describe("health + seed", () => {

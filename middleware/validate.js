@@ -1,4 +1,4 @@
-﻿import { ZodError } from 'zod';
+import { ZodError } from 'zod';
 
 export function validate(schema) {
  try { req.body = schema.parse(req.body); next(); }

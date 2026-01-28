@@ -1,4 +1,4 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const BadgeSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true, index: true },

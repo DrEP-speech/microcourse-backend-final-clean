@@ -1,4 +1,4 @@
-﻿const cors = require("cors");
+const cors = require("cors");
 const helmet = require("helmet");
 const compression = require("compression");
 const mongoSanitize = require("express-mongo-sanitize");

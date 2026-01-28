@@ -157,3 +157,6 @@ cypress/screenshots/
 # ---- OS/editor cruft ----
 .idea/
 .vscode/
+# --- generated artifacts ---
+# --- Local artifacts (generated) ---
+.env.*.local

@@ -1,4 +1,4 @@
-﻿const jwt = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 const ms = require("ms");
 const crypto = require("crypto");
 const Refresh = require("../models/RefreshToken");

@@ -1,59 +1,13 @@
+version: "3.8"
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: microcourse-api
-    environment:
-      NODE_ENV: production
-      PORT: 10003
-      # allow your vite app and same-origin
-      CORS_ORIGIN: http://localhost:5173
-      CORS_ORIGINS:
-      JWT_SECRET: dev-jwt-secret
-      JWT_EXPIRES: 7d
-      OPEN_REGISTRATION: "1"
-      MONGO_URI: mongodb://root:example@mongo:27017/microcourse?authSource=admin
-      MONGO_DB: microcourse
-      UPLOAD_DIR: /app/public/uploads
-      MAX_UPLOAD_MB: 50
-      RATE_LIMIT_MAX: 0
-      RATE_LIMIT_WINDOW_MS: 60000
+    build: .
     ports:
-      - "10003:10003"
-    volumes:
-      - ./data:/app/data
-      - ./public:/app/public
-    depends_on:
-      - mongo
-
-  mongo:
-    image: mongo:6
-    container_name: microcourse-mongo
-    restart: unless-stopped
+      - "11001:11001"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-      MONGO_INITDB_DATABASE: microcourse
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-
-  mongo-express:
-    image: mongo-express:1
-    container_name: microcourse-mongo-express
-    restart: unless-stopped
-    depends_on:
-      - mongo
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_SERVER: mongo
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: admin
-    ports:
-      - "8081:8081"
-
-volumes:
-  mongo_data:
+      - NODE_ENV=production
+      - PORT=11001
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX}

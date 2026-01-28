@@ -1,4 +1,4 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const MessageSchema = new mongoose.Schema({
   threadId: { type: String, index: true, required: true },

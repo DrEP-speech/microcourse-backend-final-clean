@@ -1,9 +1,0 @@
-const express = require('express');
-const router = express.Router();
-
-router.get('/health', (_req, res) => {
-  res.json({ ok: true, ts: new Date().toISOString() });
-});
-
-// existing sample-grade-payload route stays below…
-module.exports = router;

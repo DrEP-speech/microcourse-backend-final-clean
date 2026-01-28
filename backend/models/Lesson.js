@@ -1,4 +1,4 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const LessonSchema = new mongoose.Schema({
   courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true, index: true },

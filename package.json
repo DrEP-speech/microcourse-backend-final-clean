@@ -1,31 +1,24 @@
 {
-  "name": "microcourse-backend-final-clean",
+  "name": "microcourse-backend",
   "version": "1.0.0",
-  "private": true,
-  "description": "Microcourse backend (auth hardened, smoke-tested)",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
+    "dev": "node server.js",
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "seed:owner": "node scripts/seed-owner.js",
-    "newman:auth": "newman run tools/auth-fixed.postman_collection.json --reporters cli,htmlextra --reporter-htmlextra-export tools/auth-report.html",
-    "smoke:auth": "npm run newman:auth",
-    "verify": "npm run smoke:auth"
+"predev": "npm run smoke",
+    "seed:dev": "node scripts/seed/devSeed.js",
+    "seed:e2e": "node scripts/seed/e2eSeed.js",
+    "ps:routes": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/ps/routes-manifest.ps1",
+    "ps:e2e": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/e2e-student-onboarding.ps1",
+    "smoke": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\smoke-test.ps1"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "express": "^4.19.2",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.6.2"
-  },
-  "devDependencies": {
-    "newman": "^6.2.1",
-    "newman-reporter-htmlextra": "^1.23.1",
-    "nodemon": "^3.1.4"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "mongoose": "^8.21.1"
   }
 }

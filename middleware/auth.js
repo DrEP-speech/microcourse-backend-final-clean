@@ -1,18 +1,29 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const jwt = require("jsonwebtoken");
 
-module.exports = async function (req, res, next) {
-  const h = req.headers.authorization || '';
-  if (!h.startsWith('Bearer ')) return res.status(401).json({ success:false, code:'REQUEST_ERROR', message:'No access token' });
-  const token = h.slice(7);
-
+function authRequired(req, res, next) {
   try {
-    const payload = jwt.verify(token, process.env.ACCESS_SECRET);
-    const user = await User.findById(payload.sub);
-    if (!user || !user.isActive) return res.status(401).json({ success:false, code:'REQUEST_ERROR', message:'User inactive' });
-    req.user = { id: user._id, email: user.email, name: user.name, role: user.role, createdAt: user.createdAt, updatedAt: user.updatedAt };
+    const header = req.headers.authorization || "";
+    const [type, token] = header.split(" ");
+
+    if (type !== "Bearer" || !token) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = payload;
     next();
-  } catch {
-    return res.status(401).json({ success:false, code:'REQUEST_ERROR', message:'Invalid access token' });
+  } catch (err) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
-};
+}
+
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ ok: false, error: "Forbidden" });
+    }
+    next();
+  };
+}
+
+module.exports = { authRequired, requireRole };

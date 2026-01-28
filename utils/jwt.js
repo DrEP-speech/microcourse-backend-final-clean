@@ -1,14 +1,43 @@
-// utils/jwt.js
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
-const ACCESS_TTL  = process.env.ACCESS_TTL  || '15m';
-const REFRESH_TTL = process.env.REFRESH_TTL || '30d';
-const secret = process.env.JWT_SECRET;
+function mustGet(name, fallbackName) {
+  const v = process.env[name] || (fallbackName ? process.env[fallbackName] : undefined);
+  if (!v) throw new Error(`Missing ${name}${fallbackName ? " (or " + fallbackName + ")" : ""} in environment`);
+  return v;
+}
 
-export const signAccess = (user) =>
-  jwt.sign({ id: user._id, role: user.role || 'user' }, secret, { expiresIn: ACCESS_TTL });
+function getAccessSecret() {
+  return process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || mustGet("JWT_ACCESS_SECRET", "JWT_SECRET");
+}
+function getRefreshSecret() {
+  return process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || mustGet("JWT_REFRESH_SECRET", "JWT_SECRET");
+}
+function getAccessTtl() {
+  return process.env.JWT_ACCESS_EXPIRES_IN || "15m";
+}
+function getRefreshTtl() {
+  return process.env.JWT_REFRESH_EXPIRES_IN || "7d";
+}
 
-export const signRefresh = (user, tokenId) =>
-  jwt.sign({ sub: String(user._id), tid: tokenId }, secret, { expiresIn: REFRESH_TTL });
+export function signAccessToken(payload, options = {}) {
+  return jwt.sign(payload, getAccessSecret(), { expiresIn: getAccessTtl(), ...options });
+}
 
-export const verifyToken = (t) => jwt.verify(t, secret);
+export function signRefreshToken(payload, options = {}) {
+  return jwt.sign(payload, getRefreshSecret(), { expiresIn: getRefreshTtl(), ...options });
+}
+
+export function verifyAccessToken(token) {
+  return jwt.verify(token, getAccessSecret());
+}
+
+export function verifyRefreshToken(token) {
+  return jwt.verify(token, getRefreshSecret());
+}
+
+export default {
+  signAccessToken,
+  signRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken
+};

@@ -1,4 +1,4 @@
-﻿const Ajv = require("ajv/dist/2020");
+const Ajv = require("ajv/dist/2020");
 const addFormats = require("ajv-formats");
 
 // Ajv configured for 2020-12

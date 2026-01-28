@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+set -eu
+
+# Block committing changes under _legacy (freeze it)
+if git diff --cached --name-only | grep -Eiq '^_legacy/'; then
+  echo "❌ Commit blocked: staged changes include _legacy/. Keep _legacy frozen." 1>&2
+  echo "   Move needed changes into the active code paths instead." 1>&2
+  exit 1
+fi
+
+# Run repo hygiene (UTF-8 no BOM + LF normalization)
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -ExecutionPolicy Bypass -File "./scripts/repo-hygiene.ps1"
+else
+  powershell -NoProfile -ExecutionPolicy Bypass -File "./scripts/repo-hygiene.ps1"
+fi
+
+# If hygiene modified files, fail so you can re-stage clean output
+if ! git diff --quiet; then
+  echo "❌ Hygiene modified files. Review, then 'git add -A' and commit again." 1>&2
+  exit 1
+fi
+
+echo "✅ pre-commit OK"

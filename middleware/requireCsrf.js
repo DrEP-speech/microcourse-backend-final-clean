@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Double-submit CSRF:
  * - For unsafe methods (POST, PUT, PATCH, DELETE), require:
  *   header (x-csrf-token || x-xsrf-token || body._csrf) === cookie XSRF-TOKEN

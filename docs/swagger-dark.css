@@ -1,0 +1,13 @@
+:root {
+  --bg: #0f1115; --panel:#131720; --text:#e6e6e6; --muted:#9aa4b2; --accent:#60a5fa;
+}
+html, body { background: var(--bg) !important; color: var(--text) !important; }
+.swagger-ui .topbar { background: var(--panel) !important; border-bottom: 1px solid #1f2430; }
+.swagger-ui .topbar .download-url-wrapper input { background: #0b0e14 !important; color: var(--text) !important; }
+.swagger-ui .info, .swagger-ui .scheme-container, .swagger-ui .opblock, .model-box { background: var(--panel) !important; color: var(--text) !important; }
+.swagger-ui .opblock .opblock-summary { background: #0b0e14 !important; }
+.swagger-ui .opblock .opblock-summary-method { background: #2563eb !important; }
+.swagger-ui .opblock-tag { color: var(--accent) !important; }
+.swagger-ui .tab li { color: var(--text) !important; }
+.swagger-ui .markdown code, .swagger-ui .markdown pre { background:#0b0e14 !important; color:#d1d5db !important; }
+a { color: var(--accent) !important; }

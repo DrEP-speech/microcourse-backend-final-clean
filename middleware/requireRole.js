@@ -1,10 +1,9 @@
-// ESM
-export function requireRole(...allowed) {
+module.exports = function requireRole(roles = []) {
   return (req, res, next) => {
-    const role = req.user?.role; // set by requireAuth
-    if (!role || (allowed.length && !allowed.includes(role))) {
-      return res.status(403).json({ success: false, message: 'Forbidden' });
+    const role = req.user?.role;
+    if (!role || !roles.includes(role)) {
+      return res.status(403).json({ ok: false, error: 'Forbidden' });
     }
     next();
   };
-}
+};

@@ -1,23 +1,15 @@
-import mongoose from 'mongoose';
-const { Schema } = mongoose;
+const mongoose = require("mongoose");
 
-const answerSchema = new Schema(
+const QuizResultSchema = new mongoose.Schema(
   {
-    questionIndex: { type: Number, required: true },
-    chosenIndex: { type: Number, required: true },
-    isCorrect: { type: Boolean, required: true },
-  },
-  { _id: false }
-);
-
-const quizResultSchema = new Schema(
-  {
-    user: { type: Schema.Types.ObjectId, ref: 'User', index: true, required: true },
-    quiz: { type: Schema.Types.ObjectId, ref: 'Quiz', index: true, required: true },
-    score: { type: Number, required: true },
-    answers: { type: [answerSchema], default: [] },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    quizId: { type: mongoose.Schema.Types.ObjectId, ref: "Quiz", required: true, index: true },
+    answers: { type: [Number], default: [] },
+    score: { type: Number, default: 0 },
+    maxScore: { type: Number, default: 0 },
+    passed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.QuizResult || mongoose.model('QuizResult', quizResultSchema);
+module.exports = mongoose.model("QuizResult", QuizResultSchema);
