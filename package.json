@@ -6,12 +6,12 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-"predev": "npm run smoke",
+    "predev": "npm run smoke && npm run dev",
     "seed:dev": "node scripts/seed/devSeed.js",
     "seed:e2e": "node scripts/seed/e2eSeed.js",
     "ps:routes": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/ps/routes-manifest.ps1",
     "ps:e2e": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/e2e-student-onboarding.ps1",
-    "smoke": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\smoke-test.ps1"
+    "smoke": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-test.ps1"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

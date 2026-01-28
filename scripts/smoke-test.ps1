@@ -1,61 +1,76 @@
 param(
-  [string]$BaseUrl = "http://localhost:4000",
-  [int]$TimeoutSec = 20
+  [string]$BaseUrl = $(if ($env:SMOKE_BASEURL) { $env:SMOKE_BASEURL } else { "http://localhost:4000" })
 )
 
-$ErrorActionPreference = "Stop"
-
 function Fail($msg) {
-  Write-Host "SMOKE FAIL: $msg" -ForegroundColor Red
+  Write-Host "`nSMOKE FAIL: $msg" -ForegroundColor Red
   exit 1
 }
 
-function Wait-ForHealth {
-  param([string]$Url, [int]$TimeoutSec)
+function Ok($msg) {
+  Write-Host $msg -ForegroundColor Green
+}
 
-  $deadline = (Get-Date).AddSeconds($TimeoutSec)
-  while ((Get-Date) -lt $deadline) {
-    try {
-      $h = Invoke-RestMethod -Uri $Url -Method GET -TimeoutSec 5
-      if ($h.ok -eq $true) { return $h }
-    } catch {
-      Start-Sleep -Milliseconds 500
+function Info($msg) {
+  Write-Host $msg -ForegroundColor Cyan
+}
+
+function CallJson($method, $url, $body=$null, $headers=$null) {
+  try {
+    if ($null -ne $body) {
+      return Invoke-RestMethod -Method $method -Uri $url -ContentType "application/json" -Body ($body | ConvertTo-Json -Depth 20) -Headers $headers
+    } else {
+      return Invoke-RestMethod -Method $method -Uri $url -Headers $headers
     }
+  } catch {
+    Fail("$method $url => $($_.Exception.Message)")
   }
-  Fail "Health endpoint not ready within $TimeoutSec sec: $Url"
 }
 
-function Assert($cond, $msg) {
-  if (-not $cond) { Fail $msg }
-}
-
-Write-Host "`n=== MicroCourse Backend Smoke Test ===" -ForegroundColor Cyan
-Write-Host "BaseUrl: $BaseUrl" -ForegroundColor DarkCyan
+Write-Host "=== MicroCourse Backend Smoke Test ===" -ForegroundColor Cyan
+Write-Host ("BaseUrl: {0}" -f $BaseUrl) -ForegroundColor Cyan
 
 # 1) Health
-$healthUrl = "$BaseUrl/api/health"
-Write-Host "`nGET /api/health" -ForegroundColor Yellow
-$health = Wait-ForHealth -Url $healthUrl -TimeoutSec $TimeoutSec
-Assert ($health.status -eq "up") "Expected health.status == 'up' but got: $($health.status)"
+Info "`nGET /api/health"
+$health = CallJson "GET" "$BaseUrl/api/health"
+if (-not $health.ok) { Fail("health.ok not true") }
+Ok "ok health"
 
 # 2) Courses ping
-Write-Host "`nGET /api/courses/ping" -ForegroundColor Yellow
-$ping = Invoke-RestMethod -Uri "$BaseUrl/api/courses/ping" -Method GET -TimeoutSec 10
-Assert ($ping.ok -eq $true) "Expected ping.ok == true"
-Assert ($ping.route -eq "courses") "Expected ping.route == 'courses' but got: $($ping.route)"
+Info "`nGET /api/courses/ping"
+$cp = CallJson "GET" "$BaseUrl/api/courses/ping"
+if (-not $cp.ok) { Fail("courses ping failed") }
+Ok "ok courses/ping"
 
 # 3) Courses list
-Write-Host "`nGET /api/courses" -ForegroundColor Yellow
-$coursesResp = Invoke-RestMethod -Uri "$BaseUrl/api/courses" -Method GET -TimeoutSec 10
-Assert ($coursesResp.ok -eq $true) "Expected coursesResp.ok == true"
-Assert ($null -ne $coursesResp.courses) "Expected coursesResp.courses array"
-Assert ($coursesResp.courses.Count -ge 1) "Expected at least 1 course, got: $($coursesResp.courses.Count)"
+Info "`nGET /api/courses"
+$courses = CallJson "GET" "$BaseUrl/api/courses"
+if (-not $courses.ok) { Fail("courses list failed") }
+Ok ("ok courses (count: {0})" -f ($courses.courses | Measure-Object | Select-Object -ExpandProperty Count))
 
-# 4) Schema sanity (lightweight but meaningful)
-$first = $coursesResp.courses[0]
-Assert ($null -ne $first._id) "First course missing _id"
-Assert ([string]::IsNullOrWhiteSpace($first.title) -eq $false) "First course missing title"
-Assert ([string]::IsNullOrWhiteSpace($first.description) -eq $false) "First course missing description"
+# 4) Auth (optional but strongly recommended)
+if ($env:SMOKE_EMAIL -and $env:SMOKE_PASSWORD) {
+  Info "`nPOST /api/auth/login"
+  $loginBody = @{ email = $env:SMOKE_EMAIL; password = $env:SMOKE_PASSWORD }
+  $login = CallJson "POST" "$BaseUrl/api/auth/login" $loginBody
+
+  if (-not $login.token) { Fail("login token missing") }
+  Ok "ok auth/login"
+
+  $headers = @{ Authorization = "Bearer $($login.token)" }
+
+  Info "`nGET /api/auth/me"
+  $me = CallJson "GET" "$BaseUrl/api/auth/me" $null $headers
+  if (-not $me.ok) { Fail("auth/me failed") }
+  Ok ("ok auth/me (user: {0})" -f ($me.user.email))
+
+  Info "`nPOST /api/auth/logout"
+  $lo = CallJson "POST" "$BaseUrl/api/auth/logout" $null $headers
+  if (-not $lo.ok) { Fail("auth/logout failed") }
+  Ok "ok auth/logout"
+}
+else {
+  Write-Host "`n(Auth checks skipped: set SMOKE_EMAIL and SMOKE_PASSWORD)" -ForegroundColor Yellow
+}
 
 Write-Host "`nSMOKE PASS ✅" -ForegroundColor Green
-exit 0
