@@ -160,3 +160,5 @@ cypress/screenshots/
 # --- generated artifacts ---
 # --- Local artifacts (generated) ---
 .env.*.local
+
+.env.smoke
