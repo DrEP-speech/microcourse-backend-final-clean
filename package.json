@@ -4,23 +4,32 @@
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
-    "seed:dev": "node scripts/seed/devSeed.js",
     "seed:e2e": "node scripts/seed/e2eSeed.js",
-    "ps:routes": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/ps/routes-manifest.ps1",
-    "ps:e2e": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/e2e-student-onboarding.ps1",
-    "dev": "node server.js",
-    "smoke": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\smoke-test.ps1",
-    "dev:smoke": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-and-smoke.ps1",
-    "predev": "npm run smoke && npm run dev",
     "probe:health": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\probe-health.ps1",
-    "start": "node server.js"
+    "ps:e2e": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/e2e-student-onboarding.ps1",
+    "contracts:validate": "node scripts/contract/validate-contract.mjs scripts/contract/schemas/readyz.schema.json scripts/contract/artifacts/readyz.json",
+    "pact:up": "docker compose -f pact-broker/docker-compose.yml up -d",
+    "pact:down": "docker compose -f pact-broker/docker-compose.yml down -v",
+    "ps:routes": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/ps/routes-manifest.ps1",
+    "seed:dev": "node scripts/seed/devSeed.js",
+    "dev:smoke": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-and-smoke.ps1",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "predev": "npm run smoke && npm run dev",
+    "smoke": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/e2e-smoke.ps1",
+    "seed": "node scripts/seed/devSeed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.21.1"
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.22.0",
+    "morgan": "^1.10.1"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
   }
 }

@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReadyzResponse",
+  "type": "object",
+  "required": ["ok", "ready", "service", "db", "ts"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "ready": { "type": "boolean" },
+    "service": { "type": "string" },
+    "db": {
+      "type": "object",
+      "required": ["ok", "readyState", "message"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "readyState": { "type": "number" },
+        "message": { "type": "string" },
+        "lastError": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "ts": { "type": "string" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,53 @@
+{
+  "ok": true,
+  "quizzes": [
+    {
+      "_id": "697cdb54a8d2d3c678157b04",
+      "courseId": "697cdb53a8d2d3c678157afd",
+      "lessonId": "697cdb53a8d2d3c678157b01",
+      "title": "Onboarding Quiz",
+      "questions": [
+        {
+          "prompt": "What does JWT stand for?",
+          "options": [
+            "Java Web Token",
+            "JSON Web Token",
+            "Joint Widget Transfer",
+            "JavaScript Web Ticket"
+          ],
+          "correctIndex": 1,
+          "conceptTag": "auth.jwt",
+          "points": 1
+        },
+        {
+          "prompt": "Which HTTP header usually carries a Bearer token?",
+          "options": [
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "User-Agent"
+          ],
+          "correctIndex": 0,
+          "conceptTag": "auth.headers",
+          "points": 1
+        },
+        {
+          "prompt": "What status code is commonly used for 'Missing Bearer token'?",
+          "options": [
+            "200",
+            "301",
+            "401",
+            "500"
+          ],
+          "correctIndex": 2,
+          "conceptTag": "http.status",
+          "points": 1
+        }
+      ],
+      "published": true,
+      "createdAt": "2026-01-30T16:24:52.554Z",
+      "updatedAt": "2026-01-30T16:24:52.554Z",
+      "__v": 0
+    }
+  ]
+}

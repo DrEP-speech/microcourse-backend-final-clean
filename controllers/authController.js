@@ -2,45 +2,49 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body || {};
-    if (!email || !password) return res.status(400).json({ ok: false, error: "email and password required" });
+function signToken(user) {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("JWT_SECRET not set");
+  return jwt.sign(
+    { sub: user._id.toString(), role: user.role, email: user.email },
+    secret,
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+  );
+}
 
-    const user = await User.findOne({ email: String(email).toLowerCase().trim() }).lean();
-    if (!user) return res.status(401).json({ ok: false, error: "Invalid credentials" });
+async function register(req, res) {
+  const { name, email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ ok: false, message: "email and password required" });
 
-    const ok = await bcrypt.compare(String(password), user.passwordHash);
-    if (!ok) return res.status(401).json({ ok: false, error: "Invalid credentials" });
+  const exists = await User.findOne({ email: email.toLowerCase() });
+  if (exists) return res.status(409).json({ ok: false, message: "Email already registered" });
 
-    const secret = process.env.JWT_SECRET || "dev_secret_change_me";
-    const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role || "student" },
-      secret,
-      { expiresIn: "7d" }
-    );
+  const passwordHash = await bcrypt.hash(password, 12);
+  const user = await User.create({ name: name || "", email: email.toLowerCase(), passwordHash, role: "student" });
 
-    return res.json({
-      ok: true,
-      token,
-      user: { id: user._id, email: user.email, role: user.role || "student", name: user.name || "" }
-    });
-  } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
-  }
-};
+  const token = signToken(user);
+  return res.status(201).json({ ok: true, token, user: { id: user._id, email: user.email, role: user.role, name: user.name } });
+}
 
-exports.me = async (req, res) => {
-  try {
-    return res.json({ ok: true, user: req.user });
-  } catch (err) {
-    return res.status(500).json({ ok: false, error: err.message });
-  }
-};
+async function login(req, res) {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ ok: false, message: "email and password required" });
 
-exports.register = async (req, res) => {
-  return res.status(501).json({ ok: false, error: "register not implemented yet" });
-};
-exports.logout = async (req, res) => {
-  return res.json({ ok: true });
-};
+  const user = await User.findOne({ email: email.toLowerCase() });
+  if (!user) return res.status(401).json({ ok: false, message: "Invalid credentials" });
+
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if (!ok) return res.status(401).json({ ok: false, message: "Invalid credentials" });
+
+  const token = signToken(user);
+  return res.status(200).json({ ok: true, token, user: { id: user._id, email: user.email, role: user.role, name: user.name } });
+}
+
+async function me(req, res) {
+  const id = req.user?.sub;
+  const user = await User.findById(id).select("_id email role name");
+  if (!user) return res.status(404).json({ ok: false, message: "User not found" });
+  return res.status(200).json({ ok: true, user });
+}
+
+module.exports = { register, login, me };

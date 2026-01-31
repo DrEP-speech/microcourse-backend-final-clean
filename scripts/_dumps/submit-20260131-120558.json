@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "quizId": "697cdb54a8d2d3c678157b04",
+  "scorePct": 0,
+  "correct": 0,
+  "total": 3,
+  "resultId": null,
+  "answers": [
+    {
+      "questionId": "undefined",
+      "selectedOptionId": "undefined",
+      "correctOptionId": "1",
+      "isCorrect": false
+    },
+    {
+      "questionId": "undefined",
+      "selectedOptionId": "undefined",
+      "correctOptionId": "0",
+      "isCorrect": false
+    },
+    {
+      "questionId": "undefined",
+      "selectedOptionId": "undefined",
+      "correctOptionId": "2",
+      "isCorrect": false
+    }
+  ]
+}

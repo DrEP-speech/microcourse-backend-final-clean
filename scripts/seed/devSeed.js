@@ -1,128 +1,81 @@
 require("dotenv").config();
-const fs = require("fs");
-const path = require("path");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-// IMPORTANT: from scripts/seed -> models is ../../models
+const { connectDB } = require("../../config/db");
+
+// Adjust these requires if your model paths differ
 const User = require("../../models/User");
 const Course = require("../../models/Course");
-
-function mustEnv(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`${name} missing in .env`);
-  return v;
-}
-
-async function connectDB() {
-  await mongoose.connect(mustEnv("MONGO_URI"));
-  console.log("✅ DB connected");
-}
-
-async function upsertUser({ email, password, role, name }) {
-  // Always hash here so the seed works regardless of User model middleware.
-  const hash = await bcrypt.hash(password, 10);
-
-  let user = await User.findOne({ email });
-  if (!user) {
-    user = await User.create({ email, password: hash, role, name });
-  } else {
-    user.password = hash;
-    user.role = role;
-    user.name = name;
-    await user.save();
-  }
-  return user;
-}
-
-async function upsertCourse({ instructorId }) {
-  const slug = "microcourse-forge-how-to-use-this-app-start-here";
-
-  let course = await Course.findOne({ slug });
-
-  if (!course) {
-    // Minimal fields only; don’t assume optional schema fields exist.
-    const payload = {
-      title: "MicroCourse Forge – How to Use This App (Start Here)",
-      description: "A quick onboarding course seeded for E2E testing.",
-      slug,
-    };
-
-    // These are common across your evolving schemas; adjust if yours differs:
-    if (Course.schema?.path?.("published")) payload.published = true;
-    if (Course.schema?.path?.("status")) payload.status = "published";
-    if (Course.schema?.path?.("createdBy")) payload.createdBy = instructorId;
-    if (Course.schema?.path?.("instructorId")) payload.instructorId = instructorId;
-    if (Course.schema?.path?.("instructor")) payload.instructor = instructorId;
-    if (Course.schema?.path?.("owner")) payload.owner = instructorId;
-
-    course = await Course.create(payload);
-  }
-
-  return course;
-}
+const Lesson = require("../../models/Lesson");
+const Quiz = require("../../models/Quiz");
 
 async function main() {
-  const outFile = path.resolve(process.cwd(), "seed-artifacts.json");
-
-  // Defaults (override via env if you want)
-  const instructorEmail = process.env.SEED_INSTRUCTOR_EMAIL || "instructor@example.com";
-  const studentEmail = process.env.SEED_STUDENT_EMAIL || "student@example.com";
-  const password = process.env.SEED_PASSWORD || "Passw0rd!";
-
   await connectDB();
 
-  const instructor = await upsertUser({
-    email: instructorEmail,
-    password,
-    role: "instructor",
-    name: "Demo Instructor",
-  });
+  const email = process.env.SEED_STUDENT_EMAIL || "student1@microcourse.dev";
+  const password = process.env.SEED_STUDENT_PASSWORD || "Student123!";
 
-  const student = await upsertUser({
-    email: studentEmail,
-    password,
-    role: "student",
-    name: "Demo Student",
-  });
+  let student = await User.findOne({ email });
+  if (!student) {
+    const hash = await bcrypt.hash(password, 10);
+    student = await User.create({
+      name: "Seed Student",
+      email,
+      password: hash,
+      role: "student"
+    });
+  }
 
-  const course = await upsertCourse({ instructorId: instructor._id });
+  // Create a course if none exists
+  let course = await Course.findOne({ slug: "onboarding" });
+  if (!course) {
+    course = await Course.create({
+      title: "Onboarding Course",
+      slug: "onboarding",
+      description: "Welcome to MicroCourse. This is the onboarding track."
+    });
+  }
 
-  const artifacts = {
-    ok: true,
-    seededAt: new Date().toISOString(),
-    apiBase: process.env.API_BASE || "http://localhost:4000/api",
-    instructor: {
-      email: instructorEmail,
-      password,
-      id: instructor._id.toString(),
-      role: instructor.role,
-    },
-    student: {
-      email: studentEmail,
-      password,
-      id: student._id.toString(),
-      role: student.role,
-    },
-    course: {
-      id: course._id.toString(),
-      slug: course.slug,
-      title: course.title,
-    },
-  };
+  // Create a lesson
+  let lesson = await Lesson.findOne({ courseId: course._id, order: 1 });
+  if (!lesson) {
+    lesson = await Lesson.create({
+      courseId: course._id,
+      title: "Welcome Lesson",
+      order: 1,
+      content: "Welcome to MicroCourse!"
+    });
+  }
 
-  fs.writeFileSync(outFile, JSON.stringify(artifacts, null, 2), "utf8");
-  console.log("✅ Seeded dev data");
-  console.log("✅ Wrote artifacts:", outFile);
+  // Create a quiz
+  let quiz = await Quiz.findOne({ courseId: course._id, lessonId: lesson._id, title: "Onboarding Quiz" });
+  if (!quiz) {
+    quiz = await Quiz.create({
+      courseId: course._id,
+      lessonId: lesson._id,
+      title: "Onboarding Quiz",
+      questions: [
+        {
+          prompt: "What is MicroCourse?",
+          options: ["A micro-learning LMS", "A toaster manual", "A car part", "A music album"],
+          correctIndex: 0
+        }
+      ]
+    });
+  }
 
-  await mongoose.disconnect();
-  process.exit(0);
+  console.log("[seed] ✅ Student:", email);
+  console.log("[seed] ✅ Password:", password);
+  console.log("[seed] ✅ Course:", course._id.toString());
+  console.log("[seed] ✅ Lesson:", lesson._id.toString());
+  console.log("[seed] ✅ Quiz:", quiz._id.toString());
+
+  await mongoose.connection.close();
 }
 
 main().catch(async (err) => {
-  console.error("❌ Seed error:", err);
-  try {
-    await mongoose.disconnect();
-  } catch {}
+  console.error("[seed] ❌", err);
+  try { await mongoose.connection.close(); } catch {}
   process.exit(1);
 });

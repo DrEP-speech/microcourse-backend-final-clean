@@ -1,0 +1,46 @@
+name: Post-Deploy Smoke Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke gate (healthz then readyz)
+        env:
+          BASE_URL: ${{ secrets.RENDER_BASE_URL }}
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "Missing secrets.RENDER_BASE_URL"
+            exit 1
+          fi
+
+          echo "BASE_URL=$BASE_URL"
+
+          echo "Checking /healthz..."
+          code="000"
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/healthz" || true)
+            echo "try $i healthz => $code"
+            if [ "$code" = "200" ]; then break; fi
+            sleep 3
+          done
+
+          if [ "$code" != "200" ]; then
+            echo "FAILED: /healthz never returned 200"
+            exit 1
+          fi
+
+          echo "Checking /readyz..."
+          code2=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/readyz" || true)
+          echo "readyz => $code2"
+
+          if [ "$code2" != "200" ]; then
+            echo "FAILED: /readyz not ready (DB may be down or credentials invalid)"
+            exit 1
+          fi
+
+          echo "SMOKE GATE PASS ✅"

@@ -1,0 +1,148 @@
+{
+  "ok": true,
+  "courses": [
+    {
+      "_id": "697cdb53a8d2d3c678157afd",
+      "title": "Onboarding Course",
+      "slug": "onboarding",
+      "description": "Welcome to MicroCourse. This is the onboarding track.",
+      "published": true,
+      "createdAt": "2026-01-30T16:24:51.314Z",
+      "updatedAt": "2026-01-30T16:24:51.314Z",
+      "__v": 0
+    },
+    {
+      "_id": "696a373e9ecac6f2eacf04ca",
+      "title": "Welcome to MicroCourse (Onboarding)",
+      "description": "How to use the app + follow-up questions.",
+      "published": true,
+      "createdBy": "696a373d9ecac6f2eacf04c3",
+      "tags": [
+        "onboarding",
+        "getting-started"
+      ],
+      "createdAt": "2026-01-16T13:03:58.424Z",
+      "updatedAt": "2026-01-16T13:03:58.424Z",
+      "__v": 0
+    },
+    {
+      "_id": "696a37219ecac6f2eacf04be",
+      "title": "Welcome to MicroCourse (Onboarding)",
+      "description": "How to use the app + follow-up questions.",
+      "published": true,
+      "createdBy": "696a37119ecac6f2eacf04bb",
+      "tags": [
+        "onboarding",
+        "getting-started"
+      ],
+      "createdAt": "2026-01-16T13:03:29.892Z",
+      "updatedAt": "2026-01-16T13:03:29.892Z",
+      "__v": 0
+    },
+    {
+      "_id": "696a360d9ecac6f2eacf04b2",
+      "title": "Welcome to MicroCourse (Onboarding)",
+      "description": "How to use the app + follow-up questions.",
+      "published": true,
+      "createdBy": "696a360c9ecac6f2eacf04ab",
+      "tags": [
+        "onboarding",
+        "getting-started"
+      ],
+      "createdAt": "2026-01-16T12:58:53.638Z",
+      "updatedAt": "2026-01-16T12:58:53.638Z",
+      "__v": 0
+    },
+    {
+      "_id": "69600ca6118b84c9e938bbb0",
+      "title": "Customer Walkthrough: Using MicroCourse Like a Pro",
+      "description": "Guided onboarding with follow-up quizzes.",
+      "level": "beginner",
+      "published": true,
+      "instructorId": "695fa6088e87ecc3fe18841d",
+      "createdAt": "2026-01-08T19:59:34.741Z",
+      "updatedAt": "2026-01-08T19:59:34.741Z",
+      "__v": 0
+    },
+    {
+      "_id": "69600c80c9c05223631350f6",
+      "title": "How to Use MicroCourse",
+      "description": "Built-in onboarding course for customers.",
+      "level": "beginner",
+      "published": true,
+      "instructorId": "695fa6088e87ecc3fe18841d",
+      "createdAt": "2026-01-08T19:58:56.883Z",
+      "updatedAt": "2026-01-08T19:58:56.883Z",
+      "__v": 0
+    },
+    {
+      "_id": "695fb8dd3627ea880489065a",
+      "title": "Customer Walkthrough: Using MicroCourse Like a Pro",
+      "description": "Guided onboarding with follow-up quizzes.",
+      "level": "beginner",
+      "published": true,
+      "instructorId": "695fa6088e87ecc3fe18841d",
+      "createdAt": "2026-01-08T14:02:05.968Z",
+      "updatedAt": "2026-01-08T14:02:05.968Z",
+      "__v": 0
+    },
+    {
+      "_id": "695fb7a43627ea8804890656",
+      "title": "Customer Walkthrough: Using MicroCourse Like a Pro",
+      "description": "Guided onboarding with follow-up quizzes.",
+      "level": "beginner",
+      "published": true,
+      "instructorId": "695fa6088e87ecc3fe18841d",
+      "createdAt": "2026-01-08T13:56:52.277Z",
+      "updatedAt": "2026-01-08T13:56:52.277Z",
+      "__v": 0
+    },
+    {
+      "_id": "695f155a65a26f6f147637b4",
+      "title": "MicroCourse LMS: How to Use the App",
+      "description": "A built-in onboarding course that teaches users how to navigate MicroCourse.",
+      "level": "beginner",
+      "published": true,
+      "instructorId": "695f155865a26f6f147637aa",
+      "createdAt": "2026-01-08T02:24:26.727Z",
+      "updatedAt": "2026-01-08T02:24:26.727Z",
+      "__v": 0
+    },
+    {
+      "_id": "69499d377344a54d95f676c1",
+      "title": "Clinical Documentation: SOAP Notes That Survive Audits",
+      "description": "Write documentation that's clear, defensible, and fast.",
+      "category": "Healthcare",
+      "level": "Intermediate",
+      "published": true,
+      "coverImageUrl": "",
+      "tags": [
+        "soap",
+        "clinical",
+        "compliance"
+      ],
+      "priceCents": 6900,
+      "__v": 0,
+      "createdAt": "2025-12-22T19:34:15.277Z",
+      "updatedAt": "2025-12-22T19:34:15.277Z"
+    },
+    {
+      "_id": "69499d377344a54d95f676c0",
+      "title": "Speech Structure: From Outline to Delivery",
+      "description": "Build speeches that land: thesis, signposting, cadence, and close.",
+      "category": "Communication",
+      "level": "Beginner",
+      "published": true,
+      "coverImageUrl": "",
+      "tags": [
+        "speech",
+        "structure",
+        "delivery"
+      ],
+      "priceCents": 4900,
+      "__v": 0,
+      "createdAt": "2025-12-22T19:34:15.274Z",
+      "updatedAt": "2025-12-22T19:34:15.274Z"
+    }
+  ]
+}

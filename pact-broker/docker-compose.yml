@@ -1,0 +1,32 @@
+# NOTE: Compose "version" is obsolete in modern docker compose; omit it.
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: pactbroker
+      POSTGRES_PASSWORD: pactbroker
+      POSTGRES_DB: pactbroker
+    ports:
+      - "5432:5432"
+    volumes:
+      - pact_postgres_data:/var/lib/postgresql/data
+
+  pact-broker:
+    # Use a pullable tag. "latest" is acceptable for local dev; pin later for production.
+    image: pactfoundation/pact-broker:latest
+    depends_on:
+      - postgres
+    environment:
+      PACT_BROKER_PORT: 9292
+      PACT_BROKER_DATABASE_ADAPTER: postgres
+      PACT_BROKER_DATABASE_HOST: postgres
+      PACT_BROKER_DATABASE_NAME: pactbroker
+      PACT_BROKER_DATABASE_USERNAME: pactbroker
+      PACT_BROKER_DATABASE_PASSWORD: pactbroker
+      PACT_BROKER_LOG_LEVEL: INFO
+    ports:
+      - "9292:9292"
+
+volumes:
+  pact_postgres_data:
