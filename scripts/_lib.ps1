@@ -1,37 +1,35 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+function Get-RepoRoot {
+  param([string]$Start = $PSScriptRoot)
+  $dir = (Resolve-Path $Start).Path
+  while ($true) {
+    $pkg = Join-Path $dir "package.json"
+    $srv = Join-Path $dir "server.js"
+    if ((Test-Path $pkg) -and (Test-Path $srv)) { return $dir }
+    $parent = Split-Path $dir -Parent
+    if ([string]::IsNullOrWhiteSpace($parent) -or $parent -eq $dir) {
+      throw "Could not locate repo root (package.json + server.js)."
+    }
+    $dir = $parent
+  }
+}
+
 function Write-Utf8NoBomFile([string]$Path, [string]$Content) {
-  $dir = Split-Path $Path -Parent
+  $full = if ([System.IO.Path]::IsPathRooted($Path)) { $Path } else { Join-Path (Get-Location).Path $Path }
+  $dir = Split-Path $full -Parent
   if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
   $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-  [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
+  [System.IO.File]::WriteAllText($full, $Content, $utf8NoBom)
 }
 
-function Read-Text([string]$Path) {
-  if (-not (Test-Path $Path)) { return $null }
-  return Get-Content -LiteralPath $Path -Raw
+function Write-Section([string]$Title) {
+  Write-Host ""
+  Write-Host ("=== {0} ===" -f $Title) -ForegroundColor Cyan
 }
 
-function Patch-Or-Write([string]$Path, [string]$NewContent) {
-  Write-Utf8NoBomFile -Path $Path -Content $NewContent
-  Write-Host "✅ Wrote $Path" -ForegroundColor Green
+function Get-JsonStable([object]$Obj) {
+  # Stable JSON for contracts (sorted keys where possible)
+  return ($Obj | ConvertTo-Json -Depth 50)
 }
-
-function Ensure-LineDumpFunction {
-  # Gives you a safe way to print file lines without index errors.
-  function Show-Lines([string]$Path, [int]$Start = 1, [int]$End = 200) {
-    if (-not (Test-Path $Path)) { throw "File not found: $Path" }
-    $lines = Get-Content -LiteralPath $Path
-    $count = $lines.Count
-    if ($count -eq 0) { Write-Host "(empty file)"; return }
-    if ($Start -lt 1) { $Start = 1 }
-    if ($End -gt $count) { $End = $count }
-    for ($i=$Start; $i -le $End; $i++) {
-      "{0,3}: {1}" -f $i, $lines[$i-1]
-    }
-    Write-Host "---- ($count lines total) ----" -ForegroundColor DarkGray
-  }
-  Set-Alias -Name slines -Value Show-Lines -Scope Global
-}
-Ensure-LineDumpFunction
