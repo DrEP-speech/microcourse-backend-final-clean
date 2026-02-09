@@ -1,18 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-/**
- * GET /api/analytics/student (stub)
- */
-router.get("/student", async (req, res) => {
-  return res.status(501).json({ ok: false, message: "Not implemented: student analytics" });
-});
+const requireAuth = require("../middleware/requireAuth");
+const analytics = require("../controllers/analyticsController");
 
-/**
- * GET /api/analytics/teacher (stub)
- */
-router.get("/teacher", async (req, res) => {
-  return res.status(501).json({ ok: false, message: "Not implemented: teacher analytics" });
-});
+router.get("/student/overview", requireAuth, analytics.studentOverview);
 
 module.exports = router;

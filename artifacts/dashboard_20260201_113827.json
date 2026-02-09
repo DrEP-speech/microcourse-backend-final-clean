@@ -1,0 +1,9 @@
+{
+  "ok": false,
+  "error": "Response status code does not indicate success: 401 (Unauthorized).",
+  "details": {
+    "ok": false,
+    "error": "Missing token"
+  },
+  "status": 401
+}

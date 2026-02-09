@@ -1,0 +1,1 @@
+Write-Utf8NoBomFile $scriptPath $MyInvocation.MyCommand.Definition

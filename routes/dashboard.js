@@ -1,10 +1,16 @@
 const express = require("express");
 const router = express.Router();
+const requireAuth = require("../middleware/requireAuth");
 
-const { requireAuth } = require("../middleware/auth");
-const { getDashboard } = require("../controllers/dashboardController");
-
-// GET /api/dashboard
-router.get("/", requireAuth, getDashboard);
+// Minimal dashboard payload (expand later)
+router.get("/", requireAuth, async (req, res) => {
+  return res.json({
+    ok: true,
+    dashboard: {
+      user: req.user,
+      message: "Dashboard online"
+    }
+  });
+});
 
 module.exports = router;

@@ -1,21 +1,14 @@
 const express = require("express");
 const router = express.Router();
 
-const rawAuthController = require("../controllers/authController");
-const { pickFirstFunction, must } = require("../lib/routerUtils");
+const requireAuth = require("../middleware/requireAuth");
+const authController = require("../controllers/authController");
 
-// Pick functions safely regardless of module export shape
-const register = must(pickFirstFunction("register", rawAuthController), "register", rawAuthController);
-const login    = must(pickFirstFunction("login", rawAuthController), "login", rawAuthController);
-const me       = must(pickFirstFunction("me", rawAuthController), "me", rawAuthController);
-const logout   = must(pickFirstFunction("logout", rawAuthController), "logout", rawAuthController);
+// Public
+router.post("/register", authController.register);
+router.post("/login", authController.login);
 
-// Sanity route
-router.get("/ping", (req, res) => res.json({ ok: true, route: "auth" }));
-
-router.post("/register", register);
-router.post("/login", login);
-router.get("/me", me);
-router.post("/logout", logout);
+// Protected
+router.get("/me", requireAuth, authController.me);
 
 module.exports = router;

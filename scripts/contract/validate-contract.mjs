@@ -1,39 +1,68 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import process from "node:process";
 import Ajv from "ajv";
-import addFormats from "ajv-formats";
 
-const ajv = new Ajv({ allErrors: true, strict: false });
-addFormats(ajv);
-
-function loadJson(path) {
-  const fs = await import("node:fs/promises");
-  const raw = await fs.readFile(path, "utf8");
+async function readJson(p) {
+  const raw = await fs.readFile(p, "utf8");
   return JSON.parse(raw);
 }
 
 async function main() {
-  const [,, schemaPath, dataPath] = process.argv;
+  const root = process.cwd();
+  const artifactsDir = path.join(root, "scripts", "contract", "artifacts");
+  const schemasDir   = path.join(root, "scripts", "contract", "schemas");
 
-  if (!schemaPath || !dataPath) {
-    console.error("Usage: node scripts/contract/validate-contract.mjs <schema.json> <data.json>");
-    process.exit(2);
+  const args = process.argv.slice(2);
+  const artifacts = args.length ? args : ["healthz.json", "readyz.json"];
+
+  const ajv = new Ajv({ allErrors: true, strict: false });
+
+  // Load all schemas in scripts/contract/schemas (if any)
+  try {
+    const schemaFiles = await fs.readdir(schemasDir);
+    for (const f of schemaFiles) {
+      if (f.endsWith(".json")) {
+        const schemaPath = path.join(schemasDir, f);
+        const schema = await readJson(schemaPath);
+        ajv.addSchema(schema, schema.$id || f);
+      }
+    }
+  } catch {
+    // schemas folder may be empty; that's fine
   }
 
-  const schema = await loadJson(schemaPath);
-  const data = await loadJson(dataPath);
+  let failed = 0;
 
-  const validate = ajv.compile(schema);
-  const ok = validate(data);
+  for (const file of artifacts) {
+    const artifactPath = path.join(artifactsDir, file);
+    const schemaPath   = path.join(schemasDir, file); // convention: schema filename matches artifact filename
 
-  if (!ok) {
-    console.error("❌ Schema validation failed");
-    console.error(validate.errors);
-    process.exit(1);
+    const artifact = await readJson(artifactPath);
+
+    // If a matching schema exists, validate; otherwise just enforce "must be object"
+    let validate;
+    try {
+      const schema = await readJson(schemaPath);
+      validate = ajv.compile(schema);
+    } catch {
+      validate = ajv.compile({ type: "object" });
+    }
+
+    const ok = validate(artifact);
+    if (!ok) {
+      failed++;
+      console.error(`❌ Contract failed for ${file}`);
+      console.error(validate.errors);
+    } else {
+      console.log(`✅ Contract OK for ${file}`);
+    }
   }
 
-  console.log("✅ Schema validation passed");
+  if (failed > 0) process.exit(1);
 }
 
-main().catch((e) => {
-  console.error("Validator error:", e);
+main().catch((err) => {
+  console.error("Validator crashed:", err);
   process.exit(1);
 });

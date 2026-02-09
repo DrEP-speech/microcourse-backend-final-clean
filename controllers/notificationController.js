@@ -1,3 +1,16 @@
+'use strict';
+
+function notImplemented(name) {
+  return async (req, res) => {
+    return res.status(501).json({
+      ok: false,
+      error: "NOT_IMPLEMENTED",
+      handler: name,
+      method: req.method,
+      path: req.originalUrl
+    });
+  };
+}
 const Notification = require("../models/Notification");
 const { HttpError } = require("../utils/httpError");
 
@@ -25,4 +38,7 @@ async function markRead(req, res, next) {
   }
 }
 
-module.exports = { listMyNotifications, markRead };
+module.exports = { listMyNotifications, markRead,
+  listMyNotifications: notImplemented("listMyNotifications"),
+  markRead: notImplemented("markRead"),
+ };

@@ -1,3 +1,16 @@
+'use strict';
+
+function notImplemented(name) {
+  return async (req, res) => {
+    return res.status(501).json({
+      ok: false,
+      error: "NOT_IMPLEMENTED",
+      handler: name,
+      method: req.method,
+      path: req.originalUrl
+    });
+  };
+}
 const Badge = require("../models/Badge");
 const User = require("../models/User");
 const { HttpError } = require("../utils/httpError");
@@ -45,4 +58,8 @@ async function awardBadge(req, res, next) {
   }
 }
 
-module.exports = { listBadges, myBadges, awardBadge };
+module.exports = { listBadges, myBadges, awardBadge,
+  awardBadge: notImplemented("awardBadge"),
+  listBadges: notImplemented("listBadges"),
+  myBadges: notImplemented("myBadges"),
+ };

@@ -1,0 +1,65 @@
+const express = require("express");
+const router = express.Router();
+
+// Canonical cookie-session auth router for /api/quizzes
+// This expects middleware/auth.js to export:
+//   - requireSessionAuth (or requireAuthSession) as a cookie-based gate
+//   - requireRole(...roles) role gate for req.user.role (or session user role)
+const { requireSessionAuth, requireRole } = require("../middleware/auth");
+
+const quizController = require("../controllers/quizController");
+const quizConsumerController = require("../controllers/quizConsumerController");
+
+// Defensive helper: fail fast at boot if controllers don’t export a handler.
+// (Prevents silent "is not a function" later.)
+function mustFn(name, fn) {
+  if (typeof fn !== "function") {
+    throw new Error(`[routes/quizRoutes] Handler ${name} is not a function (got ${typeof fn}).`);
+  }
+  return fn;
+}
+
+// Instructor/Admin CRUD + listing + view
+const listQuizzes       = mustFn("listQuizzes", quizController.listQuizzes);
+const getQuiz           = mustFn("getQuiz", quizController.getQuiz);
+const createQuiz        = mustFn("createQuiz", quizController.createQuiz);
+const updateQuiz        = mustFn("updateQuiz", quizController.updateQuiz);
+const deleteQuiz        = mustFn("deleteQuiz", quizController.deleteQuiz);
+const myLatestResults   = mustFn("myLatestResults", quizController.myLatestResults);
+
+// Student player endpoints (safe shape for a quiz player UI)
+const getQuizForPlayer  = mustFn("getQuizForPlayer", quizConsumerController.getQuizForPlayer);
+const submitQuizConsumer= mustFn("submitQuizConsumer", quizConsumerController.submitQuizConsumer);
+
+// Student submit endpoint (legacy naming)
+const submitQuiz        = mustFn("submitQuiz", quizController.submitQuiz);
+
+// --------------------
+// ROUTES
+// Base: /api/quizzes
+// --------------------
+
+// List quizzes (supports ?courseId=... if controller implements it)
+router.get("/", requireSessionAuth, listQuizzes);
+
+// Current user’s latest results (optional but commonly used)
+router.get("/me/latest", requireSessionAuth, myLatestResults);
+
+// Read full quiz (admin/instructor or authenticated; controller can enforce)
+router.get("/:quizId", requireSessionAuth, getQuiz);
+
+// Quiz player view: return sanitized quiz payload (no answer key)
+router.get("/:quizId/player", requireSessionAuth, getQuizForPlayer);
+
+// Submit via consumer controller (preferred; expects { answers: [...] } and uses req.user)
+router.post("/:quizId/submit-consumer", requireSessionAuth, submitQuizConsumer);
+
+// Submit via legacy controller route (role-gated student)
+router.post("/:quizId/submit", requireSessionAuth, requireRole("student"), submitQuiz);
+
+// Instructor/Admin CRUD
+router.post("/", requireSessionAuth, requireRole("admin", "instructor"), createQuiz);
+router.put("/:quizId", requireSessionAuth, requireRole("admin", "instructor"), updateQuiz);
+router.delete("/:quizId", requireSessionAuth, requireRole("admin", "instructor"), deleteQuiz);
+
+module.exports = router;

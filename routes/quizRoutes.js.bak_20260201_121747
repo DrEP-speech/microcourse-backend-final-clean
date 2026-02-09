@@ -1,0 +1,85 @@
+const express = require("express");
+const router = express.Router();
+
+/**
+ * Canonical quiz routes (NO duplicates)
+ * - Safe: only registers routes whose handlers exist
+ * - Cookie/JWT compatible: relies on middleware/auth (req.cookies or Authorization)
+ *
+ * Mounted by server.js at: /api/quizzes
+ */
+
+const { requireAuth, requireRole } = require("../middleware/auth");
+
+// Controllers (some projects name these differently; we guard every handler)
+let quizController = {};
+let quizConsumerController = {};
+
+try { quizController = require("../controllers/quizController"); } catch (_) {}
+try { quizConsumerController = require("../controllers/quizConsumerController"); } catch (_) {}
+
+function pickFn(obj, name) {
+  return (obj && typeof obj[name] === "function") ? obj[name] : null;
+}
+
+function register(method, path, middleware, handlerName, handlerFn) {
+  if (typeof handlerFn !== "function") {
+    // Don’t crash the whole server because an optional controller function is missing.
+    // This is the “reliability over ego” approach.
+    // eslint-disable-next-line no-console
+    console.warn(`[routes/quizRoutes] Skipping ${method.toUpperCase()} ${path} (missing handler: ${handlerName})`);
+    return;
+  }
+  router[method](path, ...middleware, handlerFn);
+}
+
+// Primary handlers (prefer quizController, fall back to quizConsumerController where logical)
+const listQuizzes      = pickFn(quizController, "listQuizzes");
+const getQuiz          = pickFn(quizController, "getQuiz");
+const myLatestResults  = pickFn(quizController, "myLatestResults");
+const submitQuiz       = pickFn(quizController, "submitQuiz");
+
+const getQuizForPlayer     = pickFn(quizConsumerController, "getQuizForPlayer") || pickFn(quizController, "getQuizForPlayer");
+const submitQuizConsumer   = pickFn(quizConsumerController, "submitQuizConsumer") || pickFn(quizController, "submitQuizConsumer");
+
+// Optional admin/instructor handlers (only if they exist)
+const createQuiz      = pickFn(quizController, "createQuiz");
+const updateQuiz      = pickFn(quizController, "updateQuiz");
+const deleteQuiz      = pickFn(quizController, "deleteQuiz");
+
+// -----------------------
+// Public/Student routes
+// -----------------------
+
+// GET /api/quizzes?courseId=...
+register("get", "/", [requireAuth], "listQuizzes", listQuizzes);
+
+// GET /api/quizzes/me/latest
+register("get", "/me/latest", [requireAuth], "myLatestResults", myLatestResults);
+
+// GET /api/quizzes/:quizId
+register("get", "/:quizId", [requireAuth], "getQuiz", getQuiz);
+
+// GET /api/quizzes/:quizId/player  (consumer-friendly payload)
+register("get", "/:quizId/player", [requireAuth], "getQuizForPlayer", getQuizForPlayer || getQuiz);
+
+// POST /api/quizzes/:quizId/submit-consumer
+register("post", "/:quizId/submit-consumer", [requireAuth], "submitQuizConsumer", submitQuizConsumer || submitQuiz);
+
+// POST /api/quizzes/:quizId/submit  (role-gated if requireRole exists)
+register("post", "/:quizId/submit", [requireAuth, requireRole("student")], "submitQuiz", submitQuiz);
+
+// -----------------------
+// Admin/Instructor routes
+// -----------------------
+
+// POST /api/quizzes
+register("post", "/", [requireAuth, requireRole("admin", "instructor")], "createQuiz", createQuiz);
+
+// PUT /api/quizzes/:quizId
+register("put", "/:quizId", [requireAuth, requireRole("admin", "instructor")], "updateQuiz", updateQuiz);
+
+// DELETE /api/quizzes/:quizId
+register("delete", "/:quizId", [requireAuth, requireRole("admin", "instructor")], "deleteQuiz", deleteQuiz);
+
+module.exports = router;

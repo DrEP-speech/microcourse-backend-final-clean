@@ -1,14 +1,12 @@
-/**
- * Dashboard Controller
- * Keep this controller small + stable (investor-friendly reliability).
- */
-
-async function getDashboard(req, res) {
-  return res.json({
-    ok: true,
-    message: "Dashboard ready",
-    user: req.user || null
-  });
+function notImplemented(action) {
+  return (req, res) => res.status(501).json({ ok: false, error: "NOT_IMPLEMENTED", action });
 }
 
-module.exports = { getDashboard };
+module.exports = {
+  ping: (req, res) => res.json({ ok: true, route: "dashboard" }),
+  list: notImplemented("list"),
+  getById: notImplemented("getById"),
+  create: notImplemented("create"),
+  update: notImplemented("update"),
+  remove: notImplemented("remove")
+};

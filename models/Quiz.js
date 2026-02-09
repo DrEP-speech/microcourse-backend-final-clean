@@ -3,10 +3,8 @@ const mongoose = require("mongoose");
 const QuizQuestionSchema = new mongoose.Schema(
   {
     prompt: { type: String, required: true },
-    options: [{ type: String, required: true }],
-    correctIndex: { type: Number, required: true }, // 0-based
-    conceptTag: { type: String, default: "" }, // for analytics + AI later
-    points: { type: Number, default: 1 },
+    options: { type: [String], required: true, default: [] },
+    correctIndex: { type: Number, required: true, default: 0 },
   },
   { _id: false }
 );
@@ -14,14 +12,12 @@ const QuizQuestionSchema = new mongoose.Schema(
 const QuizSchema = new mongoose.Schema(
   {
     courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
-    lessonId: { type: mongoose.Schema.Types.ObjectId, ref: "Lesson", required: false },
-
-    title: { type: String, required: true, trim: true },
+    lessonId: { type: mongoose.Schema.Types.ObjectId, ref: "Lesson" },
+    title: { type: String, trim: true, required: true },
     questions: { type: [QuizQuestionSchema], default: [] },
-
-    published: { type: Boolean, default: true },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Quiz", QuizSchema);
+module.exports = mongoose.models.Quiz || mongoose.model("Quiz", QuizSchema);

@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzZXItMTc3MDMwNjM2MTkzNSIsImVtYWlsIjoic3R1ZGVudDE4NDY5MjI0NzVAZXhhbXBsZS5jb20iLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTc3MDMwNjM2MiwiZXhwIjoxNzcwOTExMTYyfQ.PEdRW_II0efckbV1hE-CZgqlruyq2GzHxu0cK5daHcA",
+  "user": {
+    "id": "user-1770306361935",
+    "email": "student1846922475@example.com",
+    "role": "student"
+  }
+}

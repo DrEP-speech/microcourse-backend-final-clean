@@ -1,16 +1,21 @@
 const jwt = require("jsonwebtoken");
 
-function requireAuth(req, res, next) {
-  const hdr = req.headers.authorization || "";
-  const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
-  if (!token) return res.status(401).json({ ok: false, error: "Missing token" });
-
+function auth(req, res, next) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "dev_secret_change_me");
-    req.user = decoded;
+    const header = req.headers.authorization || "";
+    const [scheme, token] = header.split(" ");
+    if (scheme !== "Bearer" || !token) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return res.status(500).json({ ok: false, error: "JWT_SECRET_MISSING" });
+    }
+    const payload = jwt.verify(token, secret);
+    req.user = payload; // { id, role, email }
     return next();
   } catch (e) {
-    return res.status(401).json({ ok: false, error: "Invalid token" });
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
 }
 
@@ -24,4 +29,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole };
+module.exports = { auth, requireRole };

@@ -1,0 +1,11 @@
+{
+    "ok":  true,
+    "message":  "Dashboard ready",
+    "user":  {
+                 "sub":  "697ed7d99e1962cb2324575a",
+                 "role":  "student",
+                 "email":  "student395487254@example.com",
+                 "iat":  1769920475,
+                 "exp":  1770525275
+             }
+}

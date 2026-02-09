@@ -1,0 +1,3 @@
+// routes/quizzes.js
+// Shim to prevent duplicates: always re-export the canonical router.
+module.exports = require("./quizRoutes");

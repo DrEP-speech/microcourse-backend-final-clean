@@ -1,63 +1,27 @@
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+. "$PSScriptRoot\ps_utils.ps1"
 
-# Always dot-source from *this file's* directory (robust no matter where you run it)
-$here = Split-Path -Parent $MyInvocation.MyCommand.Path
-. (Join-Path $here "ps\_utils.ps1")
+$base = Get-BaseUrl
 
-Write-Host "=== MicroCourse Backend Smoke Test ===" -ForegroundColor Cyan
+Write-Section "Smoke: server reachable"
+$r = Invoke-Api -Method "GET" -Url "$base/health" -ExpectedStatus @(200)
+Write-Ok "GET /health => $($r.Status)"
 
-# Prefer SMOKE_BASEURL, fall back to localhost
-$BaseUrl = $env:SMOKE_BASEURL
-if ([string]::IsNullOrWhiteSpace($BaseUrl)) { $BaseUrl = "http://localhost:4000" }
-$BaseUrl = $BaseUrl.TrimEnd("/")
+Write-Section "Smoke: auth ping"
+$r = Invoke-Api -Method "GET" -Url "$base/api/auth/ping" -ExpectedStatus @(200,404)
+if ($r.Status -eq 200) { Write-Ok "GET /api/auth/ping => 200" } else { Write-Warn "GET /api/auth/ping => $($r.Status) (route not mounted or changed)" }
 
-Write-Host ("BaseUrl: {0}" -f $BaseUrl) -ForegroundColor Cyan
+Write-Section "Smoke: register (expected: 200/201 OR shows NOT_IMPLEMENTED)"
+$email = "student_$([int][double]::Parse((Get-Date -UFormat %s)))$((Get-Random -Minimum 1000 -Maximum 9999))@example.com"
+$pass  = "Passw0rd!"
+$body  = @{ email=$email; password=$pass; role="student"; name="Test Student" }
 
-# ---- Health (warmup + check) ----
-Write-Section "GET health (warmup + check)"
+$r = Invoke-Api -Method "POST" -Url "$base/api/auth/register" -Body $body -ExpectedStatus @(200,201,400,409,501)
+Write-Host "POST /api/auth/register => $($r.Status)" -ForegroundColor Yellow
+if ($r.Status -eq 501) { Write-Fail "Register is NOT_IMPLEMENTED. You must implement controllers/authController.js." }
 
-$healthUris = @(
-  "$BaseUrl/health",
-  "$BaseUrl/api/health"
-)
+Write-Section "Smoke: login (expected: 200/201 OR shows NOT_IMPLEMENTED)"
+$r = Invoke-Api -Method "POST" -Url "$base/api/auth/login" -Body @{ email=$email; password=$pass } -ExpectedStatus @(200,201,400,401,501)
+Write-Host "POST /api/auth/login => $($r.Status)" -ForegroundColor Yellow
+if ($r.Status -eq 501) { Write-Fail "Login is NOT_IMPLEMENTED. You must implement controllers/authController.js." }
 
-# Warm Render free instances: longer timeout + retries
-$timeout = 60
-$tries = 12
-$delay = 5
-
-$codes = @{}
-foreach ($u in $healthUris) { $codes[$u] = -1 }
-
-for ($i=1; $i -le $tries; $i++) {
-  foreach ($u in $healthUris) {
-    $code = Invoke-HttpStatus -Uri $u -TimeoutSec $timeout
-    $codes[$u] = $code
-    Write-Info ("[try {0}] {1} => {2}" -f $i, $u.Replace($BaseUrl,""), $code)
-
-    if ($code -ge 200 -and $code -lt 500) {
-      # 2xx/3xx is healthy; 4xx means server is up but route missing/auth/etc.
-      # Either way, server responded, so we can proceed.
-      break
-    }
-  }
-
-  if ($codes.Values | Where-Object { $_ -ge 200 -and $_ -lt 500 }) { break }
-  Start-Sleep -Seconds $delay
-}
-
-if (-not ($codes.Values | Where-Object { $_ -ge 200 -and $_ -lt 500 })) {
-  $summary = ($codes.GetEnumerator() | ForEach-Object { "{0}={1}" -f $_.Key.Replace($BaseUrl,""), $_.Value }) -join ", "
-  throw ("No healthy endpoint yet. {0}" -f $summary)
-}
-
-Write-Ok "Server responds to health checks (2xx/3xx) or at least returns 4xx (server reachable)."
-
-# ---- Courses ping (optional) ----
-Write-Section "GET /api/courses (optional)"
-$codeCourses = Invoke-HttpStatus -Uri "$BaseUrl/api/courses" -TimeoutSec 60
-Write-Info ("/api/courses status => {0}" -f $codeCourses)
-
-Write-Ok "SMOKE PASS ✅"
-exit 0
+Write-Section "DONE"

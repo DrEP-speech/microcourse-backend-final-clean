@@ -13,24 +13,48 @@
 require("dotenv").config();
 
 const http = require("http");
+
+const healthRoutes = require("./routes/healthRoutes");
 const express = require("express");
+
+const healthRoutes = require("./routes/healthRoutes");
 const cors = require("cors");
 
+
+const healthRoutes = require("./routes/healthRoutes");
 const { connectDB } = require("./config/db");
 
+
+const healthRoutes = require("./routes/healthRoutes");
 // Routers (repo-root /routes)
 const authRoutes = require("./routes/authRoutes");
+
+const healthRoutes = require("./routes/healthRoutes");
 const courseRoutes = require("./routes/courseRoutes");
 
+
+const healthRoutes = require("./routes/healthRoutes");
 // Optional routers (only mount if they exist)
 // Uncomment once you confirm these files exist in /routes:
 // const quizRoutes = require("./routes/quizRoutes");
+
+const healthRoutes = require("./routes/healthRoutes");
 // const resultsRoutes = require("./routes/resultsRoutes");
+
+const healthRoutes = require("./routes/healthRoutes");
 // const insightsRoutes = require("./routes/insightsRoutes");
-// const notificationsRoutes = require("./routes/notificationRoutes"); // or notificationsRoutes
+
+const healthRoutes = require("./routes/healthRoutes");
+// const notificationsRoutes = require("./routes/notificationRoutes"); 
+const healthRoutes = require("./routes/healthRoutes");
+// or notificationsRoutes
 // const emailRoutes = require("./routes/emailRoutes");
+
+const healthRoutes = require("./routes/healthRoutes");
 // const analyticsRoutes = require("./routes/analyticsRoutes");
 
+
+const healthRoutes = require("./routes/healthRoutes");
 const app = express();
 
 // ---------- Config ----------
@@ -80,6 +104,35 @@ app.use("/api/courses", courseRoutes);
 // app.use("/api/analytics", analyticsRoutes);
 
 // ---------- 404 ----------
+
+/**
+ * Health endpoints (hard-guaranteed)
+ * - /healthz : liveness (no auth)
+ * - /api/health : api health (no auth)
+ */
+app.get("/healthz", (req, res) => {
+  return res.json({
+    ok: true,
+    name: process.env.APP_NAME || "microcourse-backend",
+    env: process.env.NODE_ENV || "development",
+    time: new Date().toISOString(),
+    route: "/healthz"
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  return res.json({
+    ok: true,
+    name: process.env.APP_NAME || "microcourse-backend",
+    env: process.env.NODE_ENV || "development",
+    time: new Date().toISOString(),
+    route: "/api/health"
+  });
+});
+
+// Also mount router versions (future-proof)
+app.use("/healthz", healthRoutes);
+app.use("/api/health", healthRoutes);
 app.use((req, res) => {
   res.status(404).json({
     ok: false,
@@ -143,7 +196,9 @@ function shutdown(signal) {
       // If your db module exports a disconnect function, call it here.
       // Example:
       // const mongoose = require("mongoose");
-      // await mongoose.connection.close();
+      
+const healthRoutes = require("./routes/healthRoutes");
+// await mongoose.connection.close();
       console.log("Server closed.");
       process.exit(0);
     } catch (e) {

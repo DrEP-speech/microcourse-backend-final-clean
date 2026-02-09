@@ -1,0 +1,21 @@
+const express = require("express");
+const router = express.Router();
+router.get("/", requireSessionAuth, listQuizzes);
+router.get("/:quizId", requireSessionAuth, getQuiz);
+router.get("/:quizId/player", requireSessionAuth, getQuizForPlayer);
+router.post("/:quizId/submit", requireSessionAuth, requireRole("student"), submitQuiz);
+
+
+const { requireSessionAuth, requireRole } = require("../middleware/auth");
+const quizController = require("../controllers/quizController");
+
+// GET /api/quizzes?courseId=...
+router.get("/", requireAuth, quizController.listQuizzes);
+
+// GET /api/quizzes/:id
+router.get("/:id", requireAuth, quizController.getQuiz);
+
+// POST /api/quizzes/:id/submit { answers: [0,1,2...] }
+router.post("/:id/submit", requireAuth, quizController.submitQuiz);
+
+module.exports = router;

@@ -1,50 +1,112 @@
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
+let bcrypt;
+try { bcrypt = require("bcryptjs"); } catch (e) { bcrypt = require("bcrypt"); }
+
 const User = require("../models/User");
 
 function signToken(user) {
   const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error("JWT_SECRET not set");
+  const expiresIn = process.env.JWT_EXPIRES_IN || "7d";
+  if (!secret) throw new Error("JWT_SECRET_MISSING");
   return jwt.sign(
-    { sub: user._id.toString(), role: user.role, email: user.email },
+    { id: String(user._id), email: user.email, role: user.role },
     secret,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    { expiresIn }
   );
 }
 
-async function register(req, res) {
-  const { name, email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ ok: false, message: "email and password required" });
-
-  const exists = await User.findOne({ email: email.toLowerCase() });
-  if (exists) return res.status(409).json({ ok: false, message: "Email already registered" });
-
-  const passwordHash = await bcrypt.hash(password, 12);
-  const user = await User.create({ name: name || "", email: email.toLowerCase(), passwordHash, role: "student" });
-
-  const token = signToken(user);
-  return res.status(201).json({ ok: true, token, user: { id: user._id, email: user.email, role: user.role, name: user.name } });
+function safeUser(u) {
+  return { id: String(u._id), email: u.email, role: u.role };
 }
 
-async function login(req, res) {
-  const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ ok: false, message: "email and password required" });
+exports.register = async (req, res) => {
+  try {
+    const { email, password, role } = req.body || {};
 
-  const user = await User.findOne({ email: email.toLowerCase() });
-  if (!user) return res.status(401).json({ ok: false, message: "Invalid credentials" });
+    if (!email || !password) {
+      return res.status(400).json({ ok: false, error: "EMAIL_AND_PASSWORD_REQUIRED" });
+    }
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return res.status(401).json({ ok: false, message: "Invalid credentials" });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const newRole = role ? String(role).trim().toLowerCase() : "student";
 
-  const token = signToken(user);
-  return res.status(200).json({ ok: true, token, user: { id: user._id, email: user.email, role: user.role, name: user.name } });
-}
+    // allow only known roles (adjust if your app supports more)
+    const allowed = new Set(["student", "instructor", "admin"]);
+    if (!allowed.has(newRole)) {
+      return res.status(400).json({ ok: false, error: "INVALID_ROLE" });
+    }
 
-async function me(req, res) {
-  const id = req.user?.sub;
-  const user = await User.findById(id).select("_id email role name");
-  if (!user) return res.status(404).json({ ok: false, message: "User not found" });
-  return res.status(200).json({ ok: true, user });
-}
+    const existing = await User.findOne({ email: normalizedEmail }).lean();
+    if (existing) {
+      return res.status(409).json({ ok: false, error: "EMAIL_ALREADY_EXISTS" });
+    }
 
-module.exports = { register, login, me };
+    const hash = await bcrypt.hash(String(password), 10);
+
+    const user = await User.create({
+      email: normalizedEmail,
+      passwordHash: hash,
+      role: newRole,
+    });
+
+    const token = signToken(user);
+
+    // Optional cookie for browser flows (E2E uses Bearer)
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false, // set true behind https
+    });
+
+    return res.status(201).json({ ok: true, user: safeUser(user), token });
+  } catch (err) {
+    // Translate common Mongo errors into non-500 responses
+    const msg = err && err.message ? err.message : "REGISTER_FAILED";
+    if (err && err.code === 11000) {
+      return res.status(409).json({ ok: false, error: "EMAIL_ALREADY_EXISTS" });
+    }
+    if (msg.includes("validation") || msg.includes("VALIDATION")) {
+      return res.status(400).json({ ok: false, error: "VALIDATION_ERROR" });
+    }
+    return res.status(500).json({ ok: false, error: "REGISTER_FAILED", detail: msg });
+  }
+};
+
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ ok: false, error: "EMAIL_AND_PASSWORD_REQUIRED" });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) return res.status(401).json({ ok: false, error: "INVALID_CREDENTIALS" });
+
+    const ok = await bcrypt.compare(String(password), user.passwordHash || "");
+    if (!ok) return res.status(401).json({ ok: false, error: "INVALID_CREDENTIALS" });
+
+    const token = signToken(user);
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+    });
+
+    return res.json({ ok: true, user: safeUser(user), token });
+  } catch (err) {
+    const msg = err && err.message ? err.message : "LOGIN_FAILED";
+    return res.status(500).json({ ok: false, error: "LOGIN_FAILED", detail: msg });
+  }
+};
+
+exports.me = async (req, res) => {
+  try {
+    // req.user comes from requireAuth
+    return res.json({ ok: true, user: req.user });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: "ME_FAILED" });
+  }
+};

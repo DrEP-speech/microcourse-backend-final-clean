@@ -1,0 +1,6 @@
+// routes/quizzes.js
+// Compatibility wrapper to prevent duplicate route definitions.
+// Some parts of the codebase may still require("./routes/quizzes").
+// We re-export the canonical cookie-session router.
+
+module.exports = require("./quizRoutes");

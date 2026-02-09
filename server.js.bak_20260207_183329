@@ -1,0 +1,20 @@
+const healthRoutes = require("./routes/healthRoutes");
+
+// ---- Canonical Health Endpoints (required by smoke + frontend) ----
+app.get("/healthz", (req, res) => {
+  res.status(200).send("ok");
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    ok: true,
+    name: "microcourse-backend",
+    time: new Date().toISOString(),
+    env: process.env.NODE_ENV || "development",
+    version: process.env.npm_package_version || "0.0.0",
+  });
+});
+
+// Optional router mount (also supports /api/health/) 
+app.use("/api/health", healthRoutes);
+// ---------------------------------------------------------------

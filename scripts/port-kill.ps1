@@ -1,48 +1,55 @@
+# scripts/port-kill.ps1
+# Kill any process listening on a TCP port (Windows).
 param(
+  [Parameter(Mandatory=$false)]
   [int]$Port = 4000
 )
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function Get-PidsByPort {
-  param([int]$p)
+Write-Host "🔎 Checking port $Port ..." -ForegroundColor Cyan
 
-  $pids = @()
+# IMPORTANT: do NOT use $PID (reserved). Use $pidsFound.
+[int[]]$pidsFound = @()
 
-  # Try modern cmdlet first
-  try {
-    $conns = Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction Stop
-    $pids = @($conns | Select-Object -ExpandProperty OwningProcess -Unique)
-    if ($pids.Count -gt 0) { return $pids }
-  } catch { }
-
-  # Fallback to netstat parsing
-  $lines = netstat -ano | Select-String -Pattern "LISTENING" | ForEach-Object { $_.Line }
-  foreach ($line in $lines) {
-    # Example: TCP    0.0.0.0:4000   0.0.0.0:0   LISTENING   12345
-    if ($line -match ":\s*$p\s+.*LISTENING\s+(\d+)\s*$") {
-      $pids += [int]$Matches[1]
-    }
+try {
+  $conns = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+  if ($null -ne $conns) {
+    $pidsFound = @($conns | Select-Object -ExpandProperty OwningProcess -Unique)
   }
-  return @($pids | Select-Object -Unique)
+} catch {
+  # fallback
 }
 
-$pids = @(Get-PidsByPort -p $Port)
+if (-not $pidsFound -or $pidsFound.Count -eq 0) {
+  # fallback parse
+  $lines = netstat -ano | Select-String -Pattern "LISTENING\s+.*:$Port\s"
+  if ($lines) {
+    $pidsFound = @(
+      $lines | ForEach-Object { ($_ -split "\s+")[-1] } |
+      Where-Object { $_ -match "^\d+$" } |
+      ForEach-Object { [int]$_ } |
+      Select-Object -Unique
+    )
+  }
+}
 
-if ($pids.Count -eq 0) {
-  Write-Host "No LISTENING process found on port $Port" -ForegroundColor Yellow
+if (-not $pidsFound -or $pidsFound.Count -eq 0) {
+  Write-Host "✅ Port $Port is already free." -ForegroundColor Green
   exit 0
 }
 
-Write-Host ("Killing process(es) on port {0}: {1}" -f $Port, ($pids -join ", ")) -ForegroundColor Cyan
+Write-Host "⚠ Port $Port in use by PID(s): $($pidsFound -join ', ')" -ForegroundColor Yellow
 
-foreach ($procId in $pids) {
+foreach ($procId in $pidsFound) {
   try {
+    Write-Host "🧨 Killing PID $procId (holding port $Port)..." -ForegroundColor Yellow
     Stop-Process -Id $procId -Force -ErrorAction Stop
-    Write-Host ("Killed PID {0}" -f $procId) -ForegroundColor Green
   } catch {
-    Write-Host ("Failed to kill PID {0}: {1}" -f $procId, $_.Exception.Message) -ForegroundColor Red
+    Write-Host ("⚠ Could not stop PID {0}: {1}" -f $procId, $_.Exception.Message) -ForegroundColor Yellow
   }
 }
 
-exit 0
+Start-Sleep -Milliseconds 400
+Write-Host "✅ Port $Port is now free (or attempted)." -ForegroundColor Green

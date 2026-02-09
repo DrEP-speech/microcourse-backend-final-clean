@@ -1,0 +1,277 @@
+[
+  {
+    "File": "analytics.js",
+    "Method": "GET",
+    "Path": "/student"
+  },
+  {
+    "File": "analytics.js",
+    "Method": "GET",
+    "Path": "/teacher"
+  },
+  {
+    "File": "analyticsRoutes.js",
+    "Method": "GET",
+    "Path": "/student/overview"
+  },
+  {
+    "File": "analyticsRoutes.js",
+    "Method": "GET",
+    "Path": "/teacher/summary-insights"
+  },
+  {
+    "File": "auditRoutes.js",
+    "Method": "GET",
+    "Path": "/flagged"
+  },
+  {
+    "File": "auditRoutes.js",
+    "Method": "POST",
+    "Path": "/flagged/export.csv"
+  },
+  {
+    "File": "auditRoutes.js",
+    "Method": "PUT",
+    "Path": "/flagged/resolve/:id"
+  },
+  {
+    "File": "auth.js",
+    "Method": "POST",
+    "Path": "/register"
+  },
+  {
+    "File": "auth.js",
+    "Method": "POST",
+    "Path": "/login"
+  },
+  {
+    "File": "auth.js",
+    "Method": "GET",
+    "Path": "/me"
+  },
+  {
+    "File": "authRoutes.js",
+    "Method": "GET",
+    "Path": "/ping"
+  },
+  {
+    "File": "authRoutes.js",
+    "Method": "POST",
+    "Path": "/register"
+  },
+  {
+    "File": "authRoutes.js",
+    "Method": "POST",
+    "Path": "/login"
+  },
+  {
+    "File": "authRoutes.js",
+    "Method": "GET",
+    "Path": "/me"
+  },
+  {
+    "File": "authRoutes.js",
+    "Method": "POST",
+    "Path": "/logout"
+  },
+  {
+    "File": "badgeRoutes.js",
+    "Method": "GET",
+    "Path": "/"
+  },
+  {
+    "File": "badgeRoutes.js",
+    "Method": "GET",
+    "Path": "/mine"
+  },
+  {
+    "File": "badgeRoutes.js",
+    "Method": "POST",
+    "Path": "/award"
+  },
+  {
+    "File": "courseRoutes.js",
+    "Method": "GET",
+    "Path": "/ping"
+  },
+  {
+    "File": "courseRoutes.js",
+    "Method": "GET",
+    "Path": "/"
+  },
+  {
+    "File": "courseRoutes.js",
+    "Method": "GET",
+    "Path": "/:id"
+  },
+  {
+    "File": "courseRoutes.js",
+    "Method": "POST",
+    "Path": "/"
+  },
+  {
+    "File": "courseRoutes.js",
+    "Method": "PUT",
+    "Path": "/:id"
+  },
+  {
+    "File": "courseRoutes.js",
+    "Method": "DELETE",
+    "Path": "/:id"
+  },
+  {
+    "File": "courses.js",
+    "Method": "GET",
+    "Path": "/"
+  },
+  {
+    "File": "courses.js",
+    "Method": "POST",
+    "Path": "/"
+  },
+  {
+    "File": "dashboard.js",
+    "Method": "GET",
+    "Path": "/"
+  },
+  {
+    "File": "docs.js",
+    "Method": "GET",
+    "Path": "/openapi.json"
+  },
+  {
+    "File": "docs.js",
+    "Method": "GET",
+    "Path": "/_dark.css"
+  },
+  {
+    "File": "docs.js",
+    "Method": "GET",
+    "Path": "/../redoc"
+  },
+  {
+    "File": "docs.js",
+    "Method": "GET",
+    "Path": "/../redoc-static"
+  },
+  {
+    "File": "email.js",
+    "Method": "POST",
+    "Path": "/send"
+  },
+  {
+    "File": "email.js",
+    "Method": "GET",
+    "Path": "/logs"
+  },
+  {
+    "File": "emailRoutes.js",
+    "Method": "POST",
+    "Path": "/send"
+  },
+  {
+    "File": "emailRoutes.js",
+    "Method": "GET",
+    "Path": "/logs"
+  },
+  {
+    "File": "health.js",
+    "Method": "GET",
+    "Path": "/"
+  },
+  {
+    "File": "healthRoutes.js",
+    "Method": "GET",
+    "Path": "/health"
+  },
+  {
+    "File": "index.js",
+    "Method": "GET",
+    "Path": "/health"
+  },
+  {
+    "File": "insightRoutes.js",
+    "Method": "GET",
+    "Path": "/latest"
+  },
+  {
+    "File": "insightsRoutes.js",
+    "Method": "GET",
+    "Path": "/quiz/:quizId"
+  },
+  {
+    "File": "lessonRoutes.js",
+    "Method": "GET",
+    "Path": "/"
+  },
+  {
+    "File": "lessonRoutes.js",
+    "Method": "POST",
+    "Path": "/"
+  },
+  {
+    "File": "lessonRoutes.js",
+    "Method": "PUT",
+    "Path": "/:id"
+  },
+  {
+    "File": "lessonRoutes.js",
+    "Method": "DELETE",
+    "Path": "/:id"
+  },
+  {
+    "File": "notificationRoutes.js",
+    "Method": "GET",
+    "Path": "/mine"
+  },
+  {
+    "File": "notificationRoutes.js",
+    "Method": "PUT",
+    "Path": "/:id/read"
+  },
+  {
+    "File": "notifications.js",
+    "Method": "GET",
+    "Path": "/"
+  },
+  {
+    "File": "progress.js",
+    "Method": "GET",
+    "Path": "/"
+  },
+  {
+    "File": "quizzes.js",
+    "Method": "GET",
+    "Path": "/"
+  },
+  {
+    "File": "quizzes.js",
+    "Method": "GET",
+    "Path": "/me/latest"
+  },
+  {
+    "File": "quizzes.js",
+    "Method": "GET",
+    "Path": "/:quizId"
+  },
+  {
+    "File": "quizzes.js",
+    "Method": "GET",
+    "Path": "/:quizId/player"
+  },
+  {
+    "File": "quizzes.js",
+    "Method": "POST",
+    "Path": "/:quizId/submit"
+  },
+  {
+    "File": "resultsRoutes.js",
+    "Method": "GET",
+    "Path": "/mine"
+  },
+  {
+    "File": "resultsRoutes.js",
+    "Method": "POST",
+    "Path": "/submit"
+  }
+]

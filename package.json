@@ -15,12 +15,13 @@
     "dev:smoke": "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-and-smoke.ps1",
     "start": "node server.js",
     "dev": "node server.js",
-    "predev": "npm run smoke && npm run dev",
+    "predev": "echo predev disabled (run smoke manually after server starts)",
     "smoke": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/e2e-smoke.ps1",
     "seed": "node scripts/seed/devSeed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",

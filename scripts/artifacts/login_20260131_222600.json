@@ -1,0 +1,10 @@
+{
+    "ok":  true,
+    "token":  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTdlZDVkNzllMTk2MmNiMjMyNDU3NTIiLCJyb2xlIjoic3R1ZGVudCIsImVtYWlsIjoic3R1ZGVudDE2NzA5NDMwNjVAZXhhbXBsZS5jb20iLCJpYXQiOjE3Njk5MTk5NjAsImV4cCI6MTc3MDUyNDc2MH0.DvNUqvESyaARdkVhzUQQpkmNJur59DV8OPkkYqp1w-U",
+    "user":  {
+                 "id":  "697ed5d79e1962cb23245752",
+                 "email":  "student1670943065@example.com",
+                 "role":  "student",
+                 "name":  "Test Student"
+             }
+}
