@@ -1,0 +1,20 @@
+name: doctor
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend-doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install
+        run: npm ci
+      - name: Doctor (syntax + probe)
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File ./scripts/doctor.ps1 -SkipKill

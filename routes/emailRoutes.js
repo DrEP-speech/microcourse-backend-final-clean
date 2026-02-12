@@ -1,8 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  res.status(200).json({ ok: true, message: "email route stub" });
+router.all("*", (req, res) => {
+  res.status(501).json({
+    ok: false,
+    error: "Not implemented",
+    route: req.originalUrl,
+  });
 });
 
 module.exports = router;

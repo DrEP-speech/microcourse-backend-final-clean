@@ -1,89 +1,69 @@
+param(
+  [Parameter(Position=0)]
+  [ValidateRange(1,65535)]
+  [int]$Port = 4000,
+
+  [Parameter(Position=1)]
+  [ValidateRange(1,300)]
+  [int]$WarmupSec = 8,
+
+  [Parameter(Position=2)]
+  [ValidateRange(1,600)]
+  [int]$TimeoutSec = 12,
+
+  [Parameter()]
+  [string]$BaseUrl = "",
+
+  [Parameter()]
+  [switch]$NoKill
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 function Write-Section([string]$Title) {
   Write-Host ""
-  Write-Host ("=== {0} ===" -f $Title) -ForegroundColor Cyan
+  Write-Host "=== $Title ===" -ForegroundColor Cyan
 }
 
-function Kill-Port([int]$Port) {
-  Write-Host ("🔎 Checking port {0} ..." -f $Port) -ForegroundColor Cyan
-
-  $lines = @(netstat -ano | Select-String -Pattern (":$Port\s") -ErrorAction SilentlyContinue)
-  $pids = @()
-
-  foreach ($l in $lines) {
-    $parts = @(($l.Line -split "\s+") | Where-Object { $_ -ne "" })
-    if ($parts.Count -ge 5) {
-      $last = $parts[-1]
-      if ($last -match '^\d+$') {
-        $pids += [int]$last
-      }
-    }
-  }
-
-  $pids = @($pids | Sort-Object -Unique)
-
-  if ($pids.Count -eq 0) {
-    Write-Host ("✅ Port {0} is free." -f $Port) -ForegroundColor Green
-    return
-  }
-
-  Write-Host ("⚠️ Port {0} in use by PID(s): {1}" -f $Port, ($pids -join ",")) -ForegroundColor Yellow
-
-  foreach ($procId in $pids) {
-    try {
-      Write-Host ("🧨 Killing PID {0} (holding port {1})..." -f $procId, $Port) -ForegroundColor Yellow
-      Stop-Process -Id $procId -Force -ErrorAction Stop
-    } catch {
-      Write-Host ("❌ Failed to kill PID {0}. {1}" -f $procId, $_.Exception.Message) -ForegroundColor Red
-    }
-  }
-
-  Start-Sleep -Milliseconds 300
-  Write-Host "✅ Port kill attempted." -ForegroundColor Green
-}
-
-function Invoke-Api([string]$Url) {
+function Probe([string]$Url, [int]$TimeoutSec = 5) {
   try {
-    # PowerShell 7+: do NOT throw on 404/401; give us StatusCode directly
-    $r = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 4 -SkipHttpErrorCheck
-    return [int]$r.StatusCode
+    $r = Invoke-WebRequest -Uri $Url -Method GET -UseBasicParsing -TimeoutSec $TimeoutSec
+    return [pscustomobject]@{ ok=$true; code=[int]$r.StatusCode; note="OK" }
   } catch {
-    # For true transport failures (no server, DNS, timeout), don't assume .Response exists
-    return 0
+    if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+      $code = [int]$_.Exception.Response.StatusCode
+      return [pscustomobject]@{ ok=($code -eq 401); code=$code; note=($code -eq 401 ? "PROTECTED (good)" : "FAIL") }
+    }
+    return [pscustomobject]@{ ok=$false; code=0; note="ERR" }
   }
 }
 
-$port = 4000
+if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
+  $BaseUrl = "http://127.0.0.1:$Port"
+}
 
-Write-Section ("1) Free port {0}" -f $port)
-Kill-Port $port
+Write-Section "Doctor preflight"
+Write-Host ("BaseUrl: {0}" -f $BaseUrl)
+Write-Host ("Port:    {0}" -f $Port)
 
-Write-Section ("2) Start backend clean (PORT={0})" -f $port)
-$env:PORT = "$port"
+Write-Section "Start server"
+# Adjust this to your actual start command if needed:
+# - If you use nodemon/dev: npm run dev
+# - If you use node server.js: node server.js
+$server = Start-Process -FilePath "npm" -ArgumentList @("run","dev") -PassThru -WindowStyle Hidden
 
-$psi = New-Object System.Diagnostics.ProcessStartInfo
-$psi.FileName = "cmd.exe"
-$psi.Arguments = "/c npm start"
-$psi.WorkingDirectory = (Get-Location).Path
-$psi.RedirectStandardOutput = $true
-$psi.RedirectStandardError = $true
-$psi.UseShellExecute = $false
-$psi.CreateNoWindow = $true
+Write-Host ("Server PID: {0}" -f $server.Id) -ForegroundColor Green
+Write-Host ("Warmup: {0}s" -f $WarmupSec)
+Start-Sleep -Seconds $WarmupSec
 
-$p = New-Object System.Diagnostics.Process
-$p.StartInfo = $psi
-[void]$p.Start()
-
-Start-Sleep -Seconds 2
-
-Write-Section "3) Probe endpoints"
-$base = "http://localhost:$port"
+Write-Section "Health probes"
 $paths = @(
   "/health",
   "/healthz",
   "/readyz",
+  "/api/health",
+  "/version",
   "/api",
   "/api/courses/public",
   "/api/courses",
@@ -91,21 +71,17 @@ $paths = @(
   "/api/analytics/student/overview"
 )
 
-Write-Host ("🔎 Probing {0} ..." -f $base) -ForegroundColor Cyan
-foreach ($path in $paths) {
-  $code = Invoke-Api ($base + $path)
-
-  $tag =
-    if ($code -eq 200) { "200 OK" }
-    elseif ($code -eq 401) { "401 PROTECTED (good)" }
-    elseif ($code -eq 404) { "404 NOT FOUND" }
-    elseif ($code -eq 0) { "NO RESPONSE" }
-    else { "$code" }
-
-  "{0,-28} {1}" -f $path, $tag
+foreach ($p in $paths) {
+  $u = $BaseUrl.TrimEnd("/") + $p
+  $res = Probe -Url $u -TimeoutSec $TimeoutSec
+  "{0,-30} {1,3} {2}" -f $p, $res.code, $res.note | Write-Host
 }
 
-Write-Host ""
-Write-Host ("✅ Doctor completed. Server PID: {0}" -f $p.Id) -ForegroundColor Green
-Write-Host ("Tip: Stop server with: Stop-Process -Id {0} -Force" -f $p.Id) -ForegroundColor DarkGray
+Write-Section "Done"
+Write-Host ("Doctor completed. Server PID: {0}" -f $server.Id) -ForegroundColor Green
+Write-Host ("Tip: Stop server with: Stop-Process -Id {0} -Force" -f $server.Id) -ForegroundColor DarkGray
 
+if (-not $NoKill) {
+  Write-Host "Stopping server (NoKill not set)..." -ForegroundColor Yellow
+  try { Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue } catch {}
+}

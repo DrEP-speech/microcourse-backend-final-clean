@@ -8,9 +8,9 @@
   "dev": "node server.js",
   "doctor": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/doctor.ps1 4000 8 12",
   "verify": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify.ps1",
-  "doctor:prod": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/doctor.prod.ps1 -BaseUrl %BASE_URL%"
-},
-"dependencies": {
+  "doctor:prod": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/doctor.prod.ps1 -BaseUrl $env:BASE_URL"
+}
+  "dependencies": {
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
