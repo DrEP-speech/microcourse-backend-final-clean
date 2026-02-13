@@ -8,7 +8,7 @@
   "dev": "node server.js",
   "doctor": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/doctor.ps1 4000 8 12",
   "verify": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify.ps1",
-   "doctor:prod": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/doctor.prod.ps1",
+  "doctor:prod": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/doctor.prod.ps1",
     "test": "npm run doctor:prod"
 },
 "dependencies": {

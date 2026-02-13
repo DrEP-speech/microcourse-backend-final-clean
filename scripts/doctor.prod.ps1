@@ -1,9 +1,8 @@
-# scripts/doctor.prod.ps1
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 param(
-  [string]$BaseUrl,
+  [string]$BaseUrl = $env:BASE_URL,
   [int]$WarmupTimeoutSec = 75,
   [int]$WarmupAttempts = 4,
   [int]$TimeoutSec = 25,
@@ -17,32 +16,15 @@ function Write-Section([string]$Title) {
 
 function Fail([string]$Message, [int]$Code = 2) {
   Write-Host ""
-  Write-Host "✘ $Message" -ForegroundColor Red
+  Write-Host "✖ $Message" -ForegroundColor Red
   exit $Code
-}
-
-function Normalize-BaseUrl([string]$u) {
-  if ([string]::IsNullOrWhiteSpace($u)) { return $u }
-  $u = $u.Trim()
-  if ($u.EndsWith("/")) { $u = $u.TrimEnd("/") }
-  return $u
-}
-
-function Resolve-BaseUrl([string]$arg) {
-  $u = $arg
-  if ([string]::IsNullOrWhiteSpace($u)) { $u = $env:BASE_URL }
-  $u = Normalize-BaseUrl $u
-  if ([string]::IsNullOrWhiteSpace($u)) {
-    Fail "BASE_URL is missing. Set `$env:BASE_URL or pass -BaseUrl."
-  }
-  return $u
 }
 
 function Invoke-WithRetry {
   param(
-    [Parameter(Mandatory)][string]$Url,
-    [int]$TimeoutSec = 20,
+    [Parameter(Mandatory=$true)][string]$Url,
     [int]$Attempts = 1,
+    [int]$TimeoutSec = 20,
     [int]$SleepSec = 2
   )
 
@@ -52,7 +34,7 @@ function Invoke-WithRetry {
       return Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec $TimeoutSec -SkipHttpErrorCheck
     } catch {
       $last = $_
-      Start-Sleep -Seconds $SleepSec
+      if ($i -lt $Attempts) { Start-Sleep -Seconds $SleepSec }
     }
   }
   throw $last
@@ -60,32 +42,37 @@ function Invoke-WithRetry {
 
 function Probe {
   param(
-    [Parameter(Mandatory)][string]$BaseUrl,
-    [Parameter(Mandatory)][string]$Path,
+    [Parameter(Mandatory=$true)][string]$Path,
     [int]$TimeoutSec = 20,
     [int]$Attempts = 1
   )
 
   $url = "$BaseUrl$Path"
   try {
-    $r = Invoke-WithRetry -Url $url -TimeoutSec $TimeoutSec -Attempts $Attempts -SleepSec 2
-    "{0,-28} {1,3} {2}" -f $Path, $r.StatusCode, ($(if ($r.StatusCode -eq 401) { "PROTECTED (good)" } else { "OK" }))
+    $r = Invoke-WithRetry -Url $url -Attempts $Attempts -TimeoutSec $TimeoutSec -SleepSec 2
+    "{0,-30} {1,3} {2}" -f $Path, $r.StatusCode, ($(if ($r.StatusCode -ge 200 -and $r.StatusCode -lt 400) { "OK" } else { "ERR" }))
   } catch {
-    "{0,-28} {1,3} ERR" -f $Path, 0
+    "{0,-30} {1,3} ERR" -f $Path, 0
   }
 }
 
-# ---- main ----
-$BaseUrl = Resolve-BaseUrl $BaseUrl
+# ---- Guards ----
+if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
+  Fail "BASE_URL is missing. Set `$env:BASE_URL or pass -BaseUrl."
+}
+
+# normalize trailing slash
+$BaseUrl = $BaseUrl.TrimEnd('/')
 
 Write-Section "Doctor PROD"
-Write-Host "BaseUrl: $BaseUrl"
+Write-Host ("BaseUrl: {0}" -f $BaseUrl)
 
-# Warm-up first (Render can sleep). /readyz is cheap + JSON + known stable.
-Write-Host (Probe -BaseUrl $BaseUrl -Path "/readyz" -TimeoutSec $WarmupTimeoutSec -Attempts $WarmupAttempts)
+# 2) Warmup: Render can sleep; first hit needs retries/longer timeout.
+# Use /readyz first because it's light + proven stable.
+Probe -Path "/readyz" -TimeoutSec $WarmupTimeoutSec -Attempts $WarmupAttempts | Write-Host
 
-# Now normal probes
-$paths = @(
+# 3) Normal probes (service is awake now)
+@(
   "/health",
   "/healthz",
   "/readyz",
@@ -95,11 +82,10 @@ $paths = @(
   "/api/courses",
   "/api/quizzes",
   "/api/analytics/student/overview"
-)
-
-foreach ($p in $paths) {
-  Write-Host (Probe -BaseUrl $BaseUrl -Path $p -TimeoutSec $TimeoutSec -Attempts $Attempts)
+) | ForEach-Object {
+  Probe -Path $_ -TimeoutSec $TimeoutSec -Attempts $Attempts | Write-Host
 }
 
 Write-Host ""
 Write-Host "PROD OK" -ForegroundColor Green
+exit 0
