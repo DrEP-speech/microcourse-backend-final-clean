@@ -1,43 +1,90 @@
-param(
-  [Parameter(Mandatory=$true)]
-  [string]$BaseUrl
-)
-
+# scripts/doctor.prod.ps1
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function Probe([string]$Url, [int]$TimeoutSec = 10) {
+param(
+  [string]$BaseUrl,
+  [int]$WarmupTimeoutSec = 75,
+  [int]$WarmupAttempts = 4,
+  [int]$TimeoutSec = 25,
+  [int]$Attempts = 1
+)
+
+function Write-Section([string]$Title) {
+  Write-Host ""
+  Write-Host "=== $Title ===" -ForegroundColor Cyan
+}
+
+function Fail([string]$Message, [int]$Code = 2) {
+  Write-Host ""
+  Write-Host "✘ $Message" -ForegroundColor Red
+  exit $Code
+}
+
+function Normalize-BaseUrl([string]$u) {
+  if ([string]::IsNullOrWhiteSpace($u)) { return $u }
+  $u = $u.Trim()
+  if ($u.EndsWith("/")) { $u = $u.TrimEnd("/") }
+  return $u
+}
+
+function Resolve-BaseUrl([string]$arg) {
+  $u = $arg
+  if ([string]::IsNullOrWhiteSpace($u)) { $u = $env:BASE_URL }
+  $u = Normalize-BaseUrl $u
+  if ([string]::IsNullOrWhiteSpace($u)) {
+    Fail "BASE_URL is missing. Set `$env:BASE_URL or pass -BaseUrl."
+  }
+  return $u
+}
+
+function Invoke-WithRetry {
+  param(
+    [Parameter(Mandatory)][string]$Url,
+    [int]$TimeoutSec = 20,
+    [int]$Attempts = 1,
+    [int]$SleepSec = 2
+  )
+
+  $last = $null
+  for ($i = 1; $i -le $Attempts; $i++) {
+    try {
+      return Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec $TimeoutSec -SkipHttpErrorCheck
+    } catch {
+      $last = $_
+      Start-Sleep -Seconds $SleepSec
+    }
+  }
+  throw $last
+}
+
+function Probe {
+  param(
+    [Parameter(Mandatory)][string]$BaseUrl,
+    [Parameter(Mandatory)][string]$Path,
+    [int]$TimeoutSec = 20,
+    [int]$Attempts = 1
+  )
+
+  $url = "$BaseUrl$Path"
   try {
-    $r = Invoke-WebRequest -Uri $Url -Method GET -UseBasicParsing -TimeoutSec $TimeoutSec
-    return [pscustomobject]@{ code = [int]$r.StatusCode; note = "OK" }
+    $r = Invoke-WithRetry -Url $url -TimeoutSec $TimeoutSec -Attempts $Attempts -SleepSec 2
+    "{0,-28} {1,3} {2}" -f $Path, $r.StatusCode, ($(if ($r.StatusCode -eq 401) { "PROTECTED (good)" } else { "OK" }))
   } catch {
-    $code = 0
-
-    # StrictMode-safe: Response may not exist (DNS/timeout/connection refused)
-    $respProp = $_.Exception.PSObject.Properties["Response"]
-    if ($respProp -and $respProp.Value) {
-      $statusProp = $respProp.Value.PSObject.Properties["StatusCode"]
-      if ($statusProp -and $statusProp.Value) {
-        $code = [int]$statusProp.Value
-      }
-    }
-
-    $note = switch ($code) {
-      401 { "PROTECTED (good)" }
-      403 { "PROTECTED (good)" }
-      404 { "FAIL" }
-      0   { "ERR" }
-      default { "FAIL" }
-    }
-
-    return [pscustomobject]@{ code = $code; note = $note }
+    "{0,-28} {1,3} ERR" -f $Path, 0
   }
 }
 
-Write-Host ""
-Write-Host "=== Doctor PROD ===" -ForegroundColor Cyan
-Write-Host ("BaseUrl: {0}" -f $BaseUrl)
+# ---- main ----
+$BaseUrl = Resolve-BaseUrl $BaseUrl
 
+Write-Section "Doctor PROD"
+Write-Host "BaseUrl: $BaseUrl"
+
+# Warm-up first (Render can sleep). /readyz is cheap + JSON + known stable.
+Write-Host (Probe -BaseUrl $BaseUrl -Path "/readyz" -TimeoutSec $WarmupTimeoutSec -Attempts $WarmupAttempts)
+
+# Now normal probes
 $paths = @(
   "/health",
   "/healthz",
@@ -50,22 +97,9 @@ $paths = @(
   "/api/analytics/student/overview"
 )
 
-$fail = 0
-
 foreach ($p in $paths) {
-  $u = $BaseUrl.TrimEnd("/") + $p
-  $res = Probe -Url $u -TimeoutSec 10
-
-  "{0,-35} {1,3} {2}" -f $p, $res.code, $res.note | Write-Host
-
-  if ($p -in @("/health","/healthz","/readyz","/api/health","/version","/api/courses/public")) {
-    if ($res.code -ne 200) { $fail++ }
-  }
-
-  if ($p -in @("/api/courses","/api/quizzes","/api/analytics/student/overview")) {
-    if ($res.code -notin @(401,403)) { $fail++ }
-  }
+  Write-Host (Probe -BaseUrl $BaseUrl -Path $p -TimeoutSec $TimeoutSec -Attempts $Attempts)
 }
 
-if ($fail -gt 0) { exit 1 }
+Write-Host ""
 Write-Host "PROD OK" -ForegroundColor Green

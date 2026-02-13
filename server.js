@@ -41,6 +41,17 @@ console.log("=== MICROCOURSE BACKEND BOOT ===", {
   renderCommit: process.env.RENDER_GIT_COMMIT,
 });
 
+app.get("/__whoami", (req, res) => {
+  res.status(200).json({
+    ok: true,
+    app: "microcourse-backend",
+    env: process.env.NODE_ENV || null,
+    version: process.env.npm_package_version || null,
+    renderService: process.env.RENDER_SERVICE_NAME || null,
+    renderCommit: process.env.RENDER_GIT_COMMIT || null,
+    when: new Date().toISOString(),
+  });
+});
 // --- middleware ---
 app.use(helmet());
 app.use(compression());
