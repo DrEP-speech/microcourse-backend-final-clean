@@ -2,19 +2,23 @@ name: doctor
 
 on:
   push:
-  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  backend-doctor:
+  prod-doctor:
     runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
+
       - name: Install
         run: npm ci
-      - name: Doctor (syntax + probe)
-        shell: pwsh
-        run: |
-          pwsh -NoProfile -File ./scripts/doctor.ps1 -SkipKill
+
+      - name: Doctor PROD
+        run: npm test
